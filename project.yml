@@ -17,8 +17,15 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         CFBundleURLTypes:
           - CFBundleURLSchemes: [wordsword]
+        # Hold-to-speak on the home input. Speech runs on-device when the device supports it.
+        NSMicrophoneUsageDescription: wordsword listens while you hold the input, so you can say a word instead of typing it.
+        NSSpeechRecognitionUsageDescription: Speech recognition turns what you say into the word you're looking up. It runs on your iPhone whenever your device supports it.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
+        # Export compliance: the app uses only HTTPS/ATS and no custom or non-exempt
+        # cryptography, so it qualifies for the exemption. Declaring it here removes the
+        # per-upload questionnaire in App Store Connect.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         SWIFT_VERSION: "5.10"

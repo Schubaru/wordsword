@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<!-- INCOMPLETE — see the readiness report. Apple's reason-code list could not be
+			     fetched this run, and guessing a code is an ITMS-91055 rejection. Fill this
+			     array from developer.apple.com before uploading. -->
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array/>
+		</dict>
+	</array>
+</dict>
+</plist>

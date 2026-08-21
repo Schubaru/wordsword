@@ -16,6 +16,28 @@ enum DebugSnapshots {
             let img = UIGraphicsImageRenderer(bounds: w.bounds).image { _ in w.drawHierarchy(in: w.bounds, afterScreenUpdates: true) }
             try? img.pngData()?.write(to: out.appendingPathComponent(name + ".png"))
         }
+        // Voice-only run: pose each hold-to-speak state and get out. Keeps the full tour untouched.
+        if ProcessInfo.processInfo.environment["VOICE_SHOTS"] != nil {
+            Task { @MainActor in
+                auth.hasSeenStory = true
+                auth.debugSignIn()
+                router.path = []
+                router.debug = "voice:idle";      await snap("v1-idle", after: 1.4)
+                router.debug = "voice:arming";    await snap("v2-arming", after: 0.5)
+                router.debug = "voice:listening"; await snap("v3-listening", after: 0.6)
+                router.debug = "voice:speaking";  await snap("v4-speaking", after: 0.6)
+                router.debug = "voice:settled";   await snap("v5-settled", after: 0.6)
+                router.debug = "voice:idle";      try? await Task.sleep(for: .milliseconds(600))
+                router.debug = "voice:uncertain"; await snap("v6-uncertain", after: 0.9)
+                router.debug = "voice:idle";      try? await Task.sleep(for: .milliseconds(600))
+                router.debug = "voice:nothing";   await snap("v7-nothing", after: 0.7)
+                router.debug = "voice:idle";      try? await Task.sleep(for: .milliseconds(600))
+                router.debug = "voice:denied";    await snap("v8-denied", after: 0.7)
+                print("SHOTS DONE")
+            }
+            return
+        }
+
         Task { @MainActor in
             // --- first run: splash → story → account ---
             auth.signOut()

@@ -218,7 +218,7 @@ struct DefineView: View {
                 .opacity(currentWord == nil ? 0.5 : 1)
 
                 Button { router.path = []; router.focusInput = true } label: {
-                    Image(systemName: "plus").font(.title3.weight(.semibold)).foregroundStyle(Color.ink)
+                    Image(systemName: "checkmark").font(.title3.weight(.semibold)).foregroundStyle(Color.ink)
                         .frame(width: 50, height: 50).glassy(Circle())
                 }
                 .buttonStyle(PressStyle())

@@ -42,6 +42,8 @@ enum Motion {
     static let reveal   = Animation.smooth(duration: 0.35)
     /// Sheets settling after a drag: critically damped, no overshoot.
     static let sheet    = Animation.spring(response: 0.42, dampingFraction: 0.9)
+    /// A sheet clearing out before the keyboard arrives: ease-out-quint, gone by 150ms.
+    static let sheetExit = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.18)
     /// The sword slash: ease-out-expo, decisive.
     static let slash    = Animation.timingCurve(0.16, 1, 0.3, 1, duration: 0.42)
 }

@@ -9,6 +9,7 @@ struct LibraryView: View {
     @Query(sort: \Wordlist.createdAt, order: .reverse) private var lists: [Wordlist]
     @State private var newName = ""
     @State private var naming = false
+    @FocusState private var namingFocused: Bool
 
     private var due: Int { words.filter { $0.dueAt <= Date() }.count }
 
@@ -40,6 +41,7 @@ struct LibraryView: View {
                 if naming {
                     HStack {
                         TextField("Wordlist name", text: $newName).submitLabel(.done).onSubmit(create)
+                            .focused($namingFocused)
                         Button("Add", action: create).disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                     .sheetRow(lists.isEmpty ? .only : .last)
@@ -53,6 +55,14 @@ struct LibraryView: View {
         .scrollContentBackground(.hidden)
         .background(PaperBackground())
         .navigationTitle("Library")
+        // Tapping "New wordlist" should leave you typing, not looking at an empty box. A field being
+        // inserted this same tick can't take focus, so wait out the row's insertion first.
+        .task(id: naming) {
+            guard naming else { return }
+            try? await Task.sleep(for: .milliseconds(260))
+            guard !Task.isCancelled else { return }
+            namingFocused = true
+        }
     }
 
     private func create() {

@@ -29,11 +29,17 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>wordsword listens while you hold the input, so you can say a word instead of typing it.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition turns what you say into the word you're looking up. It runs on your iPhone whenever your device supports it.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
