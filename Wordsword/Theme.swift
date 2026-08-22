@@ -33,6 +33,7 @@ extension Font {
     static let logo     = Font.system(.title2, design: .rounded).weight(.bold)
     static let define   = Font.system(.title3, design: .serif)          // it's a book
     static let pos      = Font.system(.subheadline, design: .rounded).weight(.semibold)
+    static let pron     = Font.system(.footnote, design: .rounded).weight(.semibold)   // SANG-gwin
 }
 
 // MARK: - Motion (DESIGN.md: feedback 120 · state 220 · reveal 350; no bounce)
@@ -86,8 +87,21 @@ extension View {
 
 /// The page every screen sits on: college-ruled paper in the app's tokens.
 struct PaperBackground: View {
+    var spacing: CGFloat = 28
     var topInset: CGFloat = 0
-    var body: some View { Paper(page: .page, rule: .paperRule, margin: .margin, topInset: topInset) }
+    var body: some View { Paper(page: .page, rule: .paperRule, margin: .margin, spacing: spacing, topInset: topInset) }
+}
+
+extension View {
+    /// Writes this line on the paper: the row is `lines` rules tall and the text's baseline sits on the
+    /// rule that closes it, so descenders cross the line the way they do in a notebook. Rows tile, so a
+    /// column of them stays on the grid — as long as the paper's rules are phased to the column's top.
+    func onRule(_ lines: Int = 1, spacing: CGFloat) -> some View {
+        alignmentGuide(.bottom) { $0[.lastTextBaseline] }
+            // minHeight, not height: a line that wraps (a long hint, a translation) takes the room it
+            // needs and pushes the rest of the block down a little rather than being cut off.
+            .frame(minHeight: CGFloat(lines) * spacing, alignment: .bottom)
+    }
 }
 
 /// The one full-width primary action, used by every CTA in onboarding, the account flow and the

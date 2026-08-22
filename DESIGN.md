@@ -9,14 +9,14 @@ Platform: iOS (SwiftUI). Follows system light/dark. Liquid Glass (`.glassEffect`
 | Token | Light | Dark | Role |
 |---|---|---|---|
 | page | #FFFFFF | #0B0D12 | The paper |
-| paper-rule | #E4E7EC | #1B2536 | College-rule lines, 28pt apart (decorative, under everything) |
+| paper-rule | #E4E7EC | #1B2536 | College-rule lines, 28pt apart and scaled with Dynamic Type (under everything — but on Home they are a grid, see Layout) |
 | margin | #F0837A | #6E3A38 | The one red margin line, in the gutter (x = 14) — never written over |
 | sheet | #FFFFFF | #151922 | A sheet lying on the paper: define chat, home pull-up sheet, list rows, flashcards |
 | ink | #151B24 | #E9EBEF | Primary text |
 | ink-2 | #575E69 | #A1A5AB | Secondary text (≥4.5:1 on page/sheet) |
 | pen | #000000 | #FFFFFF | Primary: actions, selection, current token, focus |
 | on-pen | #FFFFFF | #0B1220 | Text on a pen-filled control |
-| pen-wash | pen @ 10% | | Tinted surfaces: earlier tokens, WOTD card, follow-up chips |
+| pen-wash | pen @ 10% | | Tinted surfaces: earlier tokens, the Word-of-the-day chip, follow-up chips |
 | highlighter | #FFE244 | #D6B529 | Unused — the headword swipe was removed (it fought the word for legibility) |
 | rule | #DADEE5 | #1C1F24 | Hairline dividers, and the edge on every container: sheets, cards, grouped-list sections |
 | shadow | black @ 10% | | Sheet lift (radius 24) |
@@ -29,12 +29,20 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 - Home input ("ghost"): SF Rounded bold 38pt, no box — placeholder in ink-2 @ 80% (large text, ≥3:1).
 - Headword & wordmark: SF Rounded, bold, `.largeTitle`.
 - Definition: New York serif (`.fontDesign(.serif)`), `.title3`. It's a book.
+- Pronunciation: SF Rounded semibold `.footnote` at ink-2 — `SANG-gwin`, quiet enough to skip.
 - Tokens / chips: SF Rounded semibold `.subheadline`; current token = pen fill + on-pen text, earlier tokens = pen-wash + pen text.
 - Everything else: SF Pro default. One weight step between hierarchy levels.
 
 ## Layout (Natural-AI patterns, wordsword content)
 
-- **Home:** wordmark + 2 glass icon buttons; giant ghost input on the paper; a draggable **bottom sheet** (peek 316pt, 236pt when the keyboard is up) holding Word of the day + Recent. The Word of the day card is a scrap of the same ruled paper (rules at 22pt, no margin line) with a `rule` edge, not a tinted block. Drag/tap the grabber to expand; the peek edge fades to hint there's more.
+- **Home:** wordmark + 2 glass icon buttons; giant ghost input on the paper; a draggable **bottom sheet** holding the previous word + the rest of the recent words, oldest last, ending in a quiet "All N words" line. Word of the day is a `pen-wash` capsule resting on a rule under the input — a scrap laid on the page, not a card and not an action.
+- **The rules are a baseline grid, not wallpaper (Home).** Every line of the writing block — ghost input, hint/listening rule, the word of the day — is a whole number of college rules tall with its baseline sitting on the rule that closes it, so text is written *on* the paper instead of floating over it. The rules are phased to the top of that block (measured, since the safe area differs per device) rather than the block being nudged onto them, and the rule spacing scales with Dynamic Type so the alignment survives every text size. `.onRule(_:spacing:)` in `Theme.swift` is the whole mechanism. The previous-word card runs the same grid at a 22pt rule, phased by its own 18pt inset. The header sits above the grid: it's chrome, not writing.
+- **Pronunciation:** the respelling sits on its own line directly under the headword (2pt gap — it
+  belongs to the word, not to the answer, so it rides the slash in rather than fading with the
+  definition). Tapping the speaker beside it says the word. Shown on Define and on the flashcard
+  front; hidden entirely when the respelling matches the spelling, since "sit" → "sit" teaches
+  nothing. On the flashcard the speaker sits in the card's top-trailing corner, *outside* the flip
+  button — a card's one tap is "flip" and stays that way.
 - **Define:** custom header — glass back pill + the **chain as tokens** (`sanguine › optimistic`), tap an earlier token to cut back to it; "Save chain" appears at 2+ tokens. The chat sits on a white **sheet** (top radius 28) sliding up over the paper. Bottom dock = **follow-up carousel** (Explain · Sentence · More synonyms) + one primary "Add to wordlist" capsule + a glass "+" (new word).
 - **Lists (Library, wordlists, settings, add-to-wordlist):** inset-grouped rows on `sheet`, paper behind. Every row carries `.sheetRow(_:)` (or `.sheetRowButton(_:)` when it's tappable) with its place in the section — `.only` / `.first` / `.middle` / `.last` — so the section's 1pt `rule` outline runs down both sides and caps at the ends. Tappable rows zero their list insets and re-apply `SheetRowEdge.insets` inside the button, so the press wash (ink @ 5%, clipped to the row's corners) covers the whole row; SwiftUI drops the system highlight as soon as a row has a custom background.
 - **Flashcards:** the card is a sheet; a 44pt knight beside the counter reacts to each answer.
@@ -42,6 +50,29 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 - **First run:** splash → 3 story screens → account. Splash (~900ms) slashes the wordmark onto the paper under the sword and auto-advances. The story screens carry **miniatures built from the real components** — a book page with the word underlined in pen, the ghost input above the definition and follow-up chips, the ruled list with a flashcard lying on it — so the promise can't drift from the app. Account comes last, never before the story: it's the highest-friction ask in the app. Skip and "Maybe later" are always visible.
 - **Account flow (`AccountFlow`)** is one implementation used in three places — end of onboarding, Settings, and the flashcards gate. Choice → one smart email-or-phone field → 6 code boxes over a single `.oneTimeCode` field (autofill intact) → username. The code screen restates the exact address it sent to, keeps "Change it" one tap away, and counts down the resend.
 - Radius: sheets 28 (top corners), cards 18–22, chips/tokens 999. No cards inside cards.
+
+## Pronunciation (`Pronounce.swift`)
+
+Both halves ride on requests the app already makes, so saying a word costs no extra round trip.
+
+- **The respelling is computed, not fetched.** Datamuse returns Arpabet (`S AE1 NG G W IH0 N`) on the
+  same `md=` call that fetches the senses — `dp` → `dpr`. `Arpabet.respell` turns it into newspaper
+  style: stressed syllable in caps, hyphens between, e.g. `SANG-gwin`. Near-total coverage, and it's
+  the reliable source of the two (dictionaryapi.dev 502s; Datamuse doesn't).
+- **Syllables break onset-maximal, with one correction.** The longest legal onset goes to the second
+  syllable (`NG G W` → `ng` | `gw`), *except* that a stressed lax vowel keeps a coda — otherwise
+  "dynamic" breaks `dy-NA-mik`, which reads as "nay". `Arpabet.selfCheck()` pins both rules.
+- **Audio is a recording when there is one, the system voice when there isn't.** dictionaryapi.dev
+  returns an mp3 URL in `phonetics[]` on the call already in flight; `Speaker` plays it, and falls
+  back to `AVSpeechSynthesizer` otherwise — so the speaker is never a dead button. Same session
+  discipline as `VoiceListener`: `.playback` + `.duckOthers`, activated only when something actually
+  plays and handed straight back.
+- **Only ever on a tap.** `DefineView` re-mounts its headword whenever a chain is resumed; playing on
+  appear would speak at someone who didn't ask. Prefetch on appear is fine — it's silent.
+- **Persisted as tags**, `kind: "pron"` / `"audio"` — the extensible metadata system in `Models.swift`,
+  so no SwiftData migration. Words saved before this existed get filled in on their next lookup
+  (capped at 2s, so an absent network can't delay a word meant to open instantly and offline) and
+  as each flashcard comes up.
 
 ## Voice — hold to speak (`Voice.swift`)
 

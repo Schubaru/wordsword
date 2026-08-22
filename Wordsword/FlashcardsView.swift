@@ -109,6 +109,9 @@ struct FlashcardsView: View {
                         VStack(spacing: 8) {
                             Text(w.text).font(.headword).foregroundStyle(Color.ink)
                             Text(w.partOfSpeech).font(.pos).foregroundStyle(Color.ink2)
+                            if let r = Pronunciation.worthShowing(w.respelling, for: w.text) {
+                                Text(r).font(.pron).foregroundStyle(Color.ink2)
+                            }
                             Text("tap to flip").font(.caption).foregroundStyle(Color.ink2).padding(.top, 20)
                         }
                     }
@@ -120,6 +123,18 @@ struct FlashcardsView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(flipped ? "\(w.text): \(w.definition)" : "\(w.text). Tap to reveal definition")
+        .overlay(alignment: .topTrailing) {
+            SpeakerButton(word: w.text, audio: w.audioURL).padding(22)
+        }
+        // Words saved before pronunciation existed never pass back through DefineView, so they'd
+        // stay blank here forever. Fill the card in as it comes up — never blocking: the card is
+        // already readable, and @Model means the respelling just appears when it lands.
+        .task(id: w.text) {
+            Speaker.shared.prefetch(w.audioURL)
+            guard w.respelling == nil, let p = await Dictionary.pronunciation(for: w.text) else { return }
+            w.addTag("pron", p.respelling, in: context)
+            if let a = p.audio { w.addTag("audio", a.absoluteString, in: context) }
+        }
     }
 
     private var answers: some View {

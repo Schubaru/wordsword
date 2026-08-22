@@ -6,6 +6,8 @@ import SwiftData
 /// white sheet stacked over the ruled paper, follow-ups ride a carousel above one primary action.
 struct DefineView: View {
     let word: String
+    /// A chain being picked back up, oldest first, ending in `word`. Empty for a fresh lookup.
+    var trail: [String] = []
     @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
@@ -44,8 +46,15 @@ struct DefineView: View {
         }
         .task {
             withAnimation(anim(Motion.reveal)) { sheetUp = true }
+            // Restore the trail before the lookup, so the tokens are already right while it loads
+            // rather than popping in behind the definition. `finish` sees its own word already at
+            // the end of the chain and leaves it alone.
+            if chain.isEmpty { chain = trail }
             if messages.isEmpty { await define(word) }
         }
+        // Wherever the chain ends up — a synonym followed, a token jumped back to — that's where
+        // Home offers to pick it up again.
+        .onChange(of: chain) { _, c in LastSearch.chain = c }
         #if DEBUG
         .onChange(of: router.debug) { _, d in
             Task {
@@ -85,6 +94,13 @@ struct DefineView: View {
                     }
                     .padding(.vertical, 2)
                 }
+                // A resumed chain arrives fully formed, so there's nothing for the scrollTo below to
+                // animate from — and at that point the tokens have no frames yet, so it silently does
+                // nothing and the current word stays clipped off the trailing edge. Anchoring the
+                // scroll view itself means it's *born* showing the end of the chain, at any length.
+                // Only past one token: a lone word doesn't overflow, and anchoring it trailing just
+                // strands it against "Save chain" with a hole after the back button.
+                .defaultScrollAnchor(chain.count > 1 ? .trailing : .leading)
                 .onChange(of: chain.count) { _, n in withAnimation(anim(Motion.state)) { proxy.scrollTo(max(0, n - 1), anchor: .trailing) } }
             }
 
@@ -261,8 +277,15 @@ struct DefineView: View {
         // Already in the library → instant & offline.
         if let w = Word.find(text, in: context) {
             w.lastLookedUp = Date(); w.lookupCount += 1
+            // Saved before pronunciation existed: fetch it once, capped at 2s so a slow or absent
+            // network can't delay a word that's supposed to open instantly.
+            if w.respelling == nil, let p = await Dictionary.pronunciation(for: text) {
+                w.addTag("pron", p.respelling, in: context)
+                if let a = p.audio { w.addTag("audio", a.absoluteString, in: context) }
+            }
             let d = Definition(word: w.text, partOfSpeech: w.partOfSpeech, senses: [w.rawDefinition],
-                               example: w.example, synonyms: w.synonyms)
+                               example: w.example, synonyms: w.synonyms,
+                               respelling: w.respelling, audio: w.audioURL)
             finish(d, w)
             return
         }
@@ -274,6 +297,8 @@ struct DefineView: View {
                          rawDefinition: d.senses.first ?? "", example: d.example)
             context.insert(w)
             w.addTag("pos", d.partOfSpeech, in: context)
+            if let r = d.respelling { w.addTag("pron", r, in: context) }
+            if let a = d.audio { w.addTag("audio", a.absoluteString, in: context) }
             for s in d.synonyms.prefix(12) { w.addTag("synonym", s, in: context) }
             finish(d, w)
         case .suggestions(let s):
@@ -288,6 +313,7 @@ struct DefineView: View {
     private func finish(_ d: Definition, _ w: Word) {
         var d = d; d.simple = w.definition
         current = d; currentWord = w
+        Speaker.shared.prefetch(d.audio)   // warm it while they read, so the tap plays instead of waiting
         if chain.last != d.word { withAnimation(anim(Motion.state)) { chain.append(d.word); chainSaved = false } }
         dropLoading(); append(.headword(d))
     }
@@ -365,12 +391,17 @@ private struct HeadwordBubble: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(definition.word)
-                    .font(.headword).foregroundStyle(Color.ink)
-                Text(definition.partOfSpeech).font(.pos).foregroundStyle(Color.ink2)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(definition.word)
+                        .font(.headword).foregroundStyle(Color.ink)
+                    Text(definition.partOfSpeech).font(.pos).foregroundStyle(Color.ink2)
+                }
+                .accessibilityElement(children: .combine)
+                // Rides the slash in with the headword rather than fading with the definition:
+                // it's part of the word, not part of the answer.
+                PronunciationLine(word: definition.word, respelling: definition.respelling, audio: definition.audio)
             }
-            .accessibilityElement(children: .combine)
             Text(simple).font(.define).foregroundStyle(Color.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 6)

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		10D9D17C26F9C33BA107B3DB /* Pronounce.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA63A263DD2CD3809173EBB /* Pronounce.swift */; };
 		1E603F9BD7708455F466C322 /* AccountFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3D3ABF229CD6CE29EE393CE /* AccountFlow.swift */; };
 		20B94CEFC33B8AB00D5FA618 /* DefineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B23A28DD3DD5ED7E33F9F14 /* DefineView.swift */; };
 		280D154524D2214DAE09F7A5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0F5B6CE1D999DE1F355666 /* SettingsView.swift */; };
@@ -16,6 +17,7 @@
 		36566C3E6A22684F18EA4960 /* WordswordApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AC5FF4B3F440C2C8754B78 /* WordswordApp.swift */; };
 		3E435B9A6C1B8C4397E9F8EC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82EFBEEA036E82CC334B8B8 /* OnboardingView.swift */; };
 		55E72E7A10493DEBD2F98702 /* Simplifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28187C60638F1D6703C0A3C5 /* Simplifier.swift */; };
+		5FA1E163B632759B766F0495 /* LastSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E642F0E1C63E768473F1F0B4 /* LastSearch.swift */; };
 		61AFEC484A7DE4540A72E1AB /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA246B0A0258CE003755A7A /* Auth.swift */; };
 		7A228F60F4738E5FFE28EDE3 /* FlashcardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8373E914CCD11112D8F478E1 /* FlashcardsView.swift */; };
 		7DA45423AE79EBE66A980078 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCB0002F429554F359729681 /* SplashView.swift */; };
@@ -44,6 +46,7 @@
 /* Begin PBXFileReference section */
 		021530C362EEC05D054CB050 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		1914F53D59FF806EE866CFCB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		1CA63A263DD2CD3809173EBB /* Pronounce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pronounce.swift; sourceTree = "<group>"; };
 		28187C60638F1D6703C0A3C5 /* Simplifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simplifier.swift; sourceTree = "<group>"; };
 		3C5D14C2424FA7BEB7644E59 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		44C38DA9F8FA3A1838A7E025 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
@@ -63,6 +66,7 @@
 		CAA322FA2FF30C6C540EDD9F /* WordOfTheDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordOfTheDay.swift; sourceTree = "<group>"; };
 		DCDAA6672EC4DFAE844077BF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E3D3ABF229CD6CE29EE393CE /* AccountFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountFlow.swift; sourceTree = "<group>"; };
+		E642F0E1C63E768473F1F0B4 /* LastSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastSearch.swift; sourceTree = "<group>"; };
 		E6CB1089006454D1B38FF9EC /* Doodles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Doodles.swift; sourceTree = "<group>"; };
 		E82EFBEEA036E82CC334B8B8 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		F8555EA8868781CF56D4058C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -83,10 +87,12 @@
 				8373E914CCD11112D8F478E1 /* FlashcardsView.swift */,
 				1914F53D59FF806EE866CFCB /* HomeView.swift */,
 				DCDAA6672EC4DFAE844077BF /* Info.plist */,
+				E642F0E1C63E768473F1F0B4 /* LastSearch.swift */,
 				44C38DA9F8FA3A1838A7E025 /* LibraryView.swift */,
 				F8555EA8868781CF56D4058C /* Models.swift */,
 				E82EFBEEA036E82CC334B8B8 /* OnboardingView.swift */,
 				021530C362EEC05D054CB050 /* PrivacyInfo.xcprivacy */,
+				1CA63A263DD2CD3809173EBB /* Pronounce.swift */,
 				9A0F5B6CE1D999DE1F355666 /* SettingsView.swift */,
 				28187C60638F1D6703C0A3C5 /* Simplifier.swift */,
 				BCB0002F429554F359729681 /* SplashView.swift */,
@@ -231,9 +237,11 @@
 				AC4B842A0FE742C371E6F7B8 /* Doodles.swift in Sources */,
 				7A228F60F4738E5FFE28EDE3 /* FlashcardsView.swift in Sources */,
 				32912BDAF1D14119FCA29518 /* HomeView.swift in Sources */,
+				5FA1E163B632759B766F0495 /* LastSearch.swift in Sources */,
 				D2EF37DADF89E9F9CCC0EFCF /* LibraryView.swift in Sources */,
 				2DA46953FED0479D5D871BFE /* Models.swift in Sources */,
 				3E435B9A6C1B8C4397E9F8EC /* OnboardingView.swift in Sources */,
+				10D9D17C26F9C33BA107B3DB /* Pronounce.swift in Sources */,
 				280D154524D2214DAE09F7A5 /* SettingsView.swift in Sources */,
 				55E72E7A10493DEBD2F98702 /* Simplifier.swift in Sources */,
 				7DA45423AE79EBE66A980078 /* SplashView.swift in Sources */,

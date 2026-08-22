@@ -43,6 +43,7 @@ struct WordswordApp: App {
 
 enum Route: Hashable {
     case define(String)
+    case resume([String])                  // a chain picked back up: the trail is restored, the last word re-defined
     case library
     case wordlist(PersistentIdentifier?)   // nil = "All"
     case flashcards(PersistentIdentifier?)

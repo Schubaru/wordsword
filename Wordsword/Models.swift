@@ -36,6 +36,9 @@ import SwiftData
     /// "pos", "synonym" today; "antonym", "origin", "book" tomorrow — no schema change.
     func tags(_ kind: String) -> [String] { tags.filter { $0.kind == kind }.map(\.value) }
     var synonyms: [String] { tags("synonym") }
+    /// Pronunciation rides the tag system rather than new columns — no schema change, no migration.
+    var respelling: String? { tags("pron").first }
+    var audioURL: URL? { tags("audio").first.flatMap(URL.init(string:)) }
 
     func addTag(_ kind: String, _ value: String, in context: ModelContext) {
         guard !tags.contains(where: { $0.kind == kind && $0.value == value }) else { return }
