@@ -72,8 +72,7 @@ struct SettingsView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .background(PaperBackground())
-        .navigationTitle("Settings")
+        .paperScreen("Settings")
         .sheet(isPresented: $showAccount) { AccountFlow { showAccount = false } }
         .confirmationDialog("Sign out of \(auth.identifier)?", isPresented: $confirmSignOut, titleVisibility: .visible) {
             Button("Sign out", role: .destructive) { auth.signOut() }

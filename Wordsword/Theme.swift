@@ -285,3 +285,152 @@ struct SurfacePressStyle<S: Shape>: ButtonStyle {
             .animation(Motion.feedback, value: configuration.isPressed)
     }
 }
+
+// MARK: - Top-bar buttons and the screen header
+/// The one top-bar affordance: an icon on glass. Home's library/settings, Define's back, and the back
+/// and action on every pushed screen are all this button, so "the round glass thing is a top-bar
+/// action" is learned once. 44pt because that's the tap target, whatever the glyph.
+struct GlassIcon: View {
+    let systemName: String
+    let label: String
+    let action: () -> Void
+
+    init(_ systemName: String, _ label: String, action: @escaping () -> Void) {
+        self.systemName = systemName; self.label = label; self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.title3.weight(.medium)).foregroundStyle(Color.ink)
+                .frame(width: 44, height: 44)
+                .glassy(Circle())
+        }
+        .buttonStyle(PressStyle())
+        .accessibilityLabel(label)
+    }
+}
+
+/// A screen's title, written on the paper. The system nav bar floats its title over the ruled grid
+/// and gives no way to put it *on* one, so pushed screens carry this instead: glass icon buttons on
+/// their own row, then the title two rules tall with its baseline on the rule that closes it — the
+/// same grid the home input writes on.
+///
+/// The paper is phased to the title rather than the title nudged onto the paper, because the offset
+/// between them is the top safe area (different on every device) plus the button row. Both ends are
+/// measured in the same global space and the difference is the phase, so this lands the same in a
+/// pushed screen (paper starts at the screen top) and in a sheet (paper starts at the sheet top).
+struct PaperScreen<Trailing: View>: ViewModifier {
+    let title: String
+    var back = true
+    let trailing: Trailing
+
+    @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .body) private var rule: CGFloat = 28
+    @State private var paperTop: CGFloat?
+    @State private var titleTop: CGFloat?
+
+    /// Rules land at `titleTop + k·rule`, so the title's baseline (two rules down) sits on one.
+    private var phase: CGFloat {
+        guard let paperTop, let titleTop else { return 0 }
+        return (titleTop - paperTop).truncatingRemainder(dividingBy: rule) - rule
+    }
+
+    func body(content: Content) -> some View {
+        ZStack(alignment: .top) {
+            PaperBackground(spacing: rule, topInset: phase)
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                content
+            }
+        }
+        // The probe has to ignore the safe area the way the paper's canvas does, or it reports the
+        // inset frame and the phase comes out one status bar off. In the background, not a layer:
+        // a greedy safe-area-ignoring child would stretch the stack under the home indicator.
+        .background { probe(PaperTop.self).ignoresSafeArea() }
+        .toolbar(.hidden, for: .navigationBar)
+        .swipeBack()
+        .onPreferenceChange(PaperTop.self) { paperTop = $0 }
+        .onPreferenceChange(TitleTop.self) { titleTop = $0 }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                if back { GlassIcon("chevron.left", "Back") { dismiss() } }
+                Spacer(minLength: 0)
+                trailing
+            }
+            .frame(height: 44)
+            Text(title)
+                .font(.headword).foregroundStyle(Color.ink)
+                .lineLimit(1).minimumScaleFactor(0.7)
+                .onRule(2, spacing: rule)
+                .background { probe(TitleTop.self) }
+                .accessibilityAddTraits(.isHeader)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 6)
+    }
+
+    private func probe<K: PreferenceKey>(_ key: K.Type) -> some View where K.Value == CGFloat? {
+        GeometryReader { g in Color.clear.preference(key: key, value: g.frame(in: .global).minY) }
+    }
+}
+
+// One reading each, and it can be zero (a pushed screen's paper starts at the top of the screen) —
+// so the value is optional and the first real one wins. A plain CGFloat lets the sibling layers,
+// which set nothing, reduce the measurement back to the default.
+private struct PaperTop: PreferenceKey {
+    static let defaultValue: CGFloat? = nil
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) { value = value ?? nextValue() }
+}
+private struct TitleTop: PreferenceKey {
+    static let defaultValue: CGFloat? = nil
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) { value = value ?? nextValue() }
+}
+
+extension View {
+    /// A pushed screen: glass back button, the title on a rule, ruled paper behind.
+    func paperScreen(_ title: String) -> some View {
+        modifier(PaperScreen(title: title, trailing: EmptyView()))
+    }
+    /// The same, with one or more `GlassIcon`s trailing the back button.
+    func paperScreen<T: View>(_ title: String, back: Bool = true, @ViewBuilder trailing: () -> T) -> some View {
+        modifier(PaperScreen(title: title, back: back, trailing: trailing()))
+    }
+}
+
+/// Hiding the nav bar takes the interactive pop gesture with it, and swipe-back is the one
+/// navigation move people make without looking. This hands the same recogniser back, with a
+/// delegate that only lets it start when there's something to pop — pulling on the root view
+/// controller is what wedges a navigation stack.
+private struct SwipeBack: UIViewControllerRepresentable {
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        weak var nav: UINavigationController?
+        func gestureRecognizerShouldBegin(_: UIGestureRecognizer) -> Bool { (nav?.viewControllers.count ?? 0) > 1 }
+    }
+
+    final class Probe: UIViewController {
+        var coordinator: Coordinator?
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            guard let nav = navigationController, let coordinator else { return }
+            coordinator.nav = nav
+            nav.interactivePopGestureRecognizer?.delegate = coordinator
+            nav.interactivePopGestureRecognizer?.isEnabled = true
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeUIViewController(context: Context) -> Probe {
+        let vc = Probe(); vc.coordinator = context.coordinator; return vc
+    }
+    func updateUIViewController(_: Probe, context: Context) {}
+}
+
+extension View {
+    /// Gives swipe-back to a pushed screen that hides the navigation bar.
+    func swipeBack() -> some View { background { SwipeBack().frame(width: 0, height: 0) } }
+}

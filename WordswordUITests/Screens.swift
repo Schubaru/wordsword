@@ -58,7 +58,7 @@ final class Screens: XCTestCase {
         let newList = app.textFields["New wordlist"]
         newList.tap(); newList.typeText("Book club\n"); sleep(1); shot("17-wordlist-created")
         app.buttons["Done"].tap()
-        app.navigationBars.buttons.firstMatch.tap()   // back
+        app.buttons["Back"].tap()
         sleep(1); shot("18-home-history")
         // misspelling
         field.tap(); field.typeText("ubiquitious\n")
@@ -67,14 +67,14 @@ final class Screens: XCTestCase {
         app.buttons["ubiquitous"].tap()
         XCTAssertTrue(app.staticTexts["adjective"].waitForExistence(timeout: 20))
         sleep(1); shot("20-did-you-mean-resolved")
-        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["Back"].tap()
         // library + flashcards
         app.buttons["Library"].tap(); sleep(1); shot("21-library")
         app.buttons["Flashcards"].tap(); sleep(1); shot("22-flashcard-front")
         app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tap to reveal'")).firstMatch.tap(); sleep(1); shot("23-flashcard-back")
         app.buttons["Got it"].tap(); sleep(1); shot("24-flashcard-next")
-        app.navigationBars.buttons.firstMatch.tap()
-        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["Back"].tap()
+        app.buttons["Back"].tap()
         app.buttons["Settings"].tap(); sleep(1); shot("25-settings")
     }
 }

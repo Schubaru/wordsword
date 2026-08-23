@@ -36,20 +36,43 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 ## Layout (Natural-AI patterns, wordsword content)
 
 - **Home:** wordmark + 2 glass icon buttons; giant ghost input on the paper; a draggable **bottom sheet** holding the previous word + the rest of the recent words, oldest last, ending in a quiet "All N words" line. Word of the day is a `pen-wash` capsule resting on a rule under the input — a scrap laid on the page, not a card and not an action.
-- **The rules are a baseline grid, not wallpaper (Home).** Every line of the writing block — ghost input, hint/listening rule, the word of the day — is a whole number of college rules tall with its baseline sitting on the rule that closes it, so text is written *on* the paper instead of floating over it. The rules are phased to the top of that block (measured, since the safe area differs per device) rather than the block being nudged onto them, and the rule spacing scales with Dynamic Type so the alignment survives every text size. `.onRule(_:spacing:)` in `Theme.swift` is the whole mechanism. The previous-word card runs the same grid at a 22pt rule, phased by its own 18pt inset. The header sits above the grid: it's chrome, not writing.
+- **The rules are a baseline grid, not wallpaper (Home).** Every line of the writing block — ghost input, hint/listening rule, the word of the day — is a whole number of college rules tall with its baseline sitting on the rule that closes it, so text is written *on* the paper instead of floating over it. The rules are phased to the top of that block (measured, since the safe area differs per device) rather than the block being nudged onto them, and the rule spacing scales with Dynamic Type so the alignment survives every text size. `.onRule(_:spacing:)` in `Theme.swift` is the whole mechanism. The previous-word card runs the same grid at a 22pt rule, phased by its own 18pt inset. The top-bar buttons sit above the grid — they're chrome — but the title is writing and lands on a rule (see Headers).
 - **Pronunciation:** the respelling sits on its own line directly under the headword (2pt gap — it
   belongs to the word, not to the answer, so it rides the slash in rather than fading with the
   definition). Tapping the speaker beside it says the word. Shown on Define and on the flashcard
   front; hidden entirely when the respelling matches the spelling, since "sit" → "sit" teaches
   nothing. On the flashcard the speaker sits in the card's top-trailing corner, *outside* the flip
   button — a card's one tap is "flip" and stays that way.
-- **Define:** custom header — glass back pill + the **chain as tokens** (`sanguine › optimistic`), tap an earlier token to cut back to it; "Save chain" appears at 2+ tokens. The chat sits on a white **sheet** (top radius 28) sliding up over the paper. Bottom dock = **follow-up carousel** (Explain · Sentence · More synonyms) + one primary "Add to wordlist" capsule + a glass "+" (new word).
+- **Define:** custom header — glass back button + the **chain as tokens** (`sanguine › optimistic`), tap an earlier token to cut back to it; "Save chain" appears at 2+ tokens. The chat sits on a white **sheet** (top radius 28) sliding up over the paper. Bottom dock = **follow-up carousel** (Explain · Sentence · More synonyms) + one primary "Add to wordlist" capsule + a glass "+" (new word).
 - **Lists (Library, wordlists, settings, add-to-wordlist):** inset-grouped rows on `sheet`, paper behind. Every row carries `.sheetRow(_:)` (or `.sheetRowButton(_:)` when it's tappable) with its place in the section — `.only` / `.first` / `.middle` / `.last` — so the section's 1pt `rule` outline runs down both sides and caps at the ends. Tappable rows zero their list insets and re-apply `SheetRowEdge.insets` inside the button, so the press wash (ink @ 5%, clipped to the row's corners) covers the whole row; SwiftUI drops the system highlight as soon as a row has a custom background.
 - **Flashcards:** the card is a sheet; a 44pt knight beside the counter reacts to each answer.
 - **Onboarding / account flow (splash → story → account → home):** `SplashView` (sword + slashReveal on the wordmark), `StoryView` miniatures built from the same tokens, `AccountFlow`. `CTAStyle` (filled / outlined / quiet) is the one full-width button for onboarding, the account flow and the flashcards signed-out gate — text on a pen fill is always `on-pen`.
 - **First run:** splash → 3 story screens → account. Splash (~900ms) slashes the wordmark onto the paper under the sword and auto-advances. The story screens carry **miniatures built from the real components** — a book page with the word underlined in pen, the ghost input above the definition and follow-up chips, the ruled list with a flashcard lying on it — so the promise can't drift from the app. Account comes last, never before the story: it's the highest-friction ask in the app. Skip and "Maybe later" are always visible.
 - **Account flow (`AccountFlow`)** is one implementation used in three places — end of onboarding, Settings, and the flashcards gate. Choice → one smart email-or-phone field → 6 code boxes over a single `.oneTimeCode` field (autofill intact) → username. The code screen restates the exact address it sent to, keeps "Change it" one tap away, and counts down the resend.
 - Radius: sheets 28 (top corners), cards 18–22, chips/tokens 999. No cards inside cards.
+
+## Headers (`PaperScreen` in `Theme.swift`)
+
+No screen uses the system navigation bar. It floats its title over the ruled grid with no way to put
+it *on* one, and it can't hold the app's glass buttons — so every pushed screen wears the same
+custom header instead, via `.paperScreen(_:trailing:)`.
+
+- **A row of glass icons, then the title.** Back leads (`chevron.left`), actions trail. Nothing is a
+  word: `Practice` on a wordlist is the flashcards glyph Library already uses for that row, and the
+  add-to-wordlist sheet's `Done` is an `xmark` (nothing to commit — every toggle is already saved —
+  so its one control just closes it). Icon-only means a VoiceOver label on every one.
+- **The title is written on the paper**, two rules tall with its baseline on the rule that closes it
+  — the same grid the home input writes on, so a screen title reads like a headword rather than
+  chrome. It's static: no large-title collapse on scroll, because a title that slides off the rule
+  it sits on is worse than one that stays.
+- **The paper is phased to the title, not the title nudged onto the paper.** The gap between them is
+  the top safe area (per device) plus the button row, so both ends are measured in the same global
+  space and the difference sets `topInset`. That lands identically on a pushed screen (paper starts
+  at the top of the screen) and in a sheet (paper starts at the top of the sheet), and it survives
+  every Dynamic Type size because the rule spacing scales with the text.
+- **Swipe-back comes back with it.** Hiding the nav bar takes the interactive pop gesture along, and
+  that's the one navigation move people make without looking — `.swipeBack()` hands the same
+  recogniser back, refusing to start at the root so the stack can't wedge.
 
 ## Pronunciation (`Pronounce.swift`)
 
@@ -138,3 +161,5 @@ until you stop talking.
 ## Buttons
 
 `CTAStyle` is the one full-width action, in three weights: **filled** (pen fill, on-pen text), **outlined** (sheet fill, 1pt rule border, ink text, ink @ 6% on press), **quiet** (ink-2, no fill). Used across onboarding, the account flow and the account prompts, so "this is the button that moves me forward" is learned once. `PressStyle` is the chip/pill press (0.96 scale, 120ms); `SurfacePressStyle` is the same beat for a tappable card (0.98 scale + ink @ 6% in the card's own shape); `SheetRowButtonStyle` is the grouped-list row press.
+
+`GlassIcon` is the one top-bar button — a 44pt circle of glass around an `ink` symbol, Liquid Glass on the iOS 26 SDK and `.ultraThinMaterial` below it. Home's library and settings, Define's back, and the back and actions on every pushed screen are all this button, so "the round glass thing is a top-bar action" is learned once. 44pt whatever the glyph: that's the tap target.

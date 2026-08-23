@@ -53,8 +53,7 @@ struct LibraryView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background(PaperBackground())
-        .navigationTitle("Library")
+        .paperScreen("Library")
         // Tapping "New wordlist" should leave you typing, not looking at an empty box. A field being
         // inserted this same tick can't take focus, so wait out the row's insertion first.
         .task(id: naming) {
@@ -126,11 +125,10 @@ struct WordlistDetailView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background(PaperBackground())
-        .navigationTitle(list?.name ?? "All words")
-        .toolbar {
+        .paperScreen(list?.name ?? "All words") {
+            // Same glyph as Library's Flashcards row, so the icon is learned in one place.
             if !words.isEmpty {
-                Button("Practice") { router.path.append(.flashcards(listID)) }.fontWeight(.semibold)
+                GlassIcon("rectangle.on.rectangle.angled", "Practice") { router.path.append(.flashcards(listID)) }
             }
         }
     }
@@ -145,41 +143,40 @@ struct AddToWordlistSheet: View {
     @State private var newName = ""
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    HStack {
-                        TextField("New wordlist", text: $newName).submitLabel(.done).onSubmit(create)
-                        Button("Create", action: create).disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                    .sheetRow(.only)
+        List {
+            Section {
+                HStack {
+                    TextField("New wordlist", text: $newName).submitLabel(.done).onSubmit(create)
+                    Button("Create", action: create).disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                Section {
-                    ForEach(Array(lists.enumerated()), id: \.element.persistentModelID) { i, l in
-                        let on = l.words.contains(word)
-                        Button {
-                            withAnimation(Motion.state) { on ? l.words.removeAll { $0 == word } : l.words.append(word) }
-                        } label: {
-                            HStack {
-                                Text(l.name).foregroundStyle(Color.ink)
-                                Spacer()
-                                Text("\(l.words.count)").font(.subheadline).foregroundStyle(Color.ink2)
-                                Image(systemName: on ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(on ? Color.pen : Color.rule).font(.title3)
-                                    .contentTransition(.symbolEffect(.replace))
-                            }
-                        }
-                        .sheetRowButton(i, of: lists.count)
-                    }
-                } footer: {
-                    Text("\"\(word.text)\" is already in All. Wordlists are your playlists.")
-                }
+                .sheetRow(.only)
             }
-                .scrollContentBackground(.hidden)
-            .background(PaperBackground())
-            .navigationTitle("Add to wordlist")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("Done") { dismiss() }.fontWeight(.semibold) }
+            Section {
+                ForEach(Array(lists.enumerated()), id: \.element.persistentModelID) { i, l in
+                    let on = l.words.contains(word)
+                    Button {
+                        withAnimation(Motion.state) { on ? l.words.removeAll { $0 == word } : l.words.append(word) }
+                    } label: {
+                        HStack {
+                            Text(l.name).foregroundStyle(Color.ink)
+                            Spacer()
+                            Text("\(l.words.count)").font(.subheadline).foregroundStyle(Color.ink2)
+                            Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(on ? Color.pen : Color.rule).font(.title3)
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                    }
+                    .sheetRowButton(i, of: lists.count)
+                }
+            } footer: {
+                Text("\"\(word.text)\" is already in All. Wordlists are your playlists.")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        // No navigation stack behind it any more: nothing pushes, and the one control commits
+        // nothing — every toggle is already saved — so it just closes the sheet.
+        .paperScreen("Add to wordlist", back: false) {
+            GlassIcon("xmark", "Done") { dismiss() }
         }
         .presentationDetents([.medium, .large])
     }

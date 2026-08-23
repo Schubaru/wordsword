@@ -51,9 +51,7 @@ struct FlashcardsView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(PaperBackground())
-        .navigationTitle("Flashcards")
-        .navigationBarTitleDisplayMode(.inline)
+        .paperScreen("Flashcards")
         .sheet(isPresented: $showAccount) { AccountFlow { showAccount = false } }
         .onAppear(perform: build)
         #if DEBUG

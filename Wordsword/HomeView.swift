@@ -164,21 +164,10 @@ struct HomeView: View {
         HStack {
             Wordmark()
             Spacer()
-            iconButton("books.vertical", "Library") { router.path.append(.library) }
-            iconButton("gearshape", "Settings") { router.path.append(.settings) }
+            GlassIcon("books.vertical", "Library") { router.path.append(.library) }
+            GlassIcon("gearshape", "Settings") { router.path.append(.settings) }
         }
         .padding(.top, 8)
-    }
-
-    private func iconButton(_ name: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: name)
-                .font(.title3.weight(.medium)).foregroundStyle(Color.ink)
-                .frame(width: 44, height: 44)
-                .glassy(Circle())
-        }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel(label)
     }
 
     // MARK: the input — giant ghost text on the paper, no box. The whole point of the home page.

@@ -41,6 +41,7 @@ struct DefineView: View {
         }
         .safeAreaInset(edge: .bottom) { dock }
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBack()
         .sheet(isPresented: $showLists) {
             if let w = currentWord { AddToWordlistSheet(word: w) }
         }
@@ -72,15 +73,10 @@ struct DefineView: View {
         #endif
     }
 
-    // MARK: - header: back pill + the chain as tokens + save
+    // MARK: - header: glass back + the chain as tokens + save
     private var header: some View {
         HStack(spacing: 10) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left").font(.body.weight(.semibold)).foregroundStyle(Color.ink)
-                    .frame(width: 38, height: 38).glassy(Circle())
-            }
-            .buttonStyle(PressStyle())
-            .accessibilityLabel("Back")
+            GlassIcon("chevron.left", "Back") { dismiss() }
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
