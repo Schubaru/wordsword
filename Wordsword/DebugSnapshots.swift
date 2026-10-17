@@ -50,10 +50,9 @@ enum DebugSnapshots {
             router.debug = "story:2"; await snap("04-story-kept")
 
             router.debug = "story:done"; await snap("05-account-choice")
-            router.debug = "acct:id";    await snap("06-identifier")
-            router.debug = "acct:code";  await snap("07-code", after: 2)
-            router.debug = "acct:bad";   await snap("08-code-wrong")
-            router.debug = "acct:name";  await snap("09-username")
+            router.debug = "acct:error"; await snap("06-account-error")
+            router.debug = "acct:name";  await snap("07-username")
+            router.debug = "acct:choice"
 
             // --- signed out: the app still works, flashcards ask for an account ---
             auth.hasSeenStory = true

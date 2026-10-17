@@ -9,6 +9,12 @@ targets:
     type: application
     platform: iOS
     sources: [Wordsword]
+    # Sign in with Apple. Needs a signing team and the capability on the bundle ID to actually
+    # work — until then the button returns an error and the flow says so.
+    entitlements:
+      path: Wordsword/Wordsword.entitlements
+      properties:
+        com.apple.developer.applesignin: [Default]
     info:
       path: Wordsword/Info.plist
       properties:

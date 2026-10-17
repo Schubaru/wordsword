@@ -13,11 +13,14 @@
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
-			<!-- INCOMPLETE — see the readiness report. Apple's reason-code list could not be
-			     fetched this run, and guessing a code is an ITMS-91055 rejection. Fill this
-			     array from developer.apple.com before uploading. -->
+			<!-- CA92.1: defaults readable and writable only by this app. Verified against
+			     Apple's TN3183, fetched 2026-08-23. The app uses UserDefaults.standard only
+			     (Auth.swift:95, LastSearch.swift:13) — no App Group, no extension, so the
+			     App Group code 1C8F.1 does not apply. -->
 			<key>NSPrivacyAccessedAPITypeReasons</key>
-			<array/>
+			<array>
+				<string>CA92.1</string>
+			</array>
 		</dict>
 	</array>
 </dict>

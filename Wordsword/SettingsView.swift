@@ -7,7 +7,12 @@ struct SettingsView: View {
     @Query private var words: [Word]
     @State private var confirmClear = false
     @State private var confirmSignOut = false
+    @State private var confirmDelete = false
     @State private var showAccount = false
+
+    /// There's no server to revoke Apple's link from our side, so the delete dialog hands the user
+    /// the one switch that does. Path per Apple support article 102571, read 2026-10-17.
+    private static let disconnect = "To also disconnect wordsword from your Apple ID: Settings → your name → Sign in with Apple → wordsword → Delete."
 
     var body: some View {
         @Bindable var auth = auth
@@ -24,15 +29,20 @@ struct SettingsView: View {
                             .textInputAutocapitalization(.never).autocorrectionDisabled()
                     }
                     .sheetRow(.first)
-                    // Middle truncation: a long address still shows whose account this is.
-                    LabeledContent("Signed in as") {
-                        Text(auth.identifier).lineLimit(1).truncationMode(.middle)
-                    }
-                    .sheetRow(.middle)
-                    // Signing out locks flashcards until you sign back in, and on a build with
-                    // no delivery behind it that means another code. Worth one tap of confirming.
+                    // Says *how* you're signed in, not *as whom*: Apple's user ID is opaque and
+                    // means nothing to a person, so it's never shown.
+                    LabeledContent("Signed in with", value: "Apple")
+                        .sheetRow(.middle)
+                    // Signing out locks flashcards until you sign back in. Worth one tap of confirming.
                     Button { confirmSignOut = true } label: {
                         Text("Sign out").foregroundStyle(Color.pen)
+                    }
+                    .sheetRowButton(.middle)
+                    // Required in-app by App Store guideline 5.1.1(v) for any app that offers
+                    // account creation. It sits under Sign out rather than somewhere safer:
+                    // deletion people can't find is the thing the guideline exists to prevent.
+                    Button(role: .destructive) { confirmDelete = true } label: {
+                        Text("Delete account").foregroundStyle(.red)
                     }
                     .sheetRowButton(.last)
                 } else {
@@ -45,7 +55,9 @@ struct SettingsView: View {
                 Text("You")
             } footer: {
                 Text(auth.isSignedIn
-                     ? "Signing out keeps every word on this phone."
+                     // Covers both buttons above it. Saying only "signing out" while a red
+                     // Delete account sits alongside invites the reader to assume the opposite.
+                     ? "Signing out or deleting your account keeps every word on this phone."
                      : "No account yet — your words are saved on this phone. An account adds flashcards, and backup once sync ships.")
             }
             Section {
@@ -74,10 +86,19 @@ struct SettingsView: View {
         .scrollContentBackground(.hidden)
         .paperScreen("Settings")
         .sheet(isPresented: $showAccount) { AccountFlow { showAccount = false } }
-        .confirmationDialog("Sign out of \(auth.identifier)?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+        .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
             Button("Sign out", role: .destructive) { auth.signOut() }
         } message: {
             Text("Every word stays on this phone. Flashcards lock until you sign back in.")
+        }
+        // Names what survives, not just what goes: the fear this dialog has to answer is "am I
+        // about to lose my library", and the answer is no.
+        .confirmationDialog("Delete your account?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete account", role: .destructive) { auth.deleteAccount() }
+        } message: {
+            Text(words.isEmpty
+                 ? "Your account is removed from this phone and can't be restored. \(Self.disconnect)"
+                 : "Your account is removed from this phone and can't be restored. Your \(words.count) saved words stay — clear them separately if you want those gone too. \(Self.disconnect)")
         }
         .confirmationDialog("Delete all \(words.count) words and every wordlist?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Delete everything", role: .destructive) {

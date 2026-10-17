@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import SwiftData
 
@@ -24,7 +25,15 @@ struct WordswordApp: App {
             .environment(router)
             .environment(auth)
             .tint(.pen)
+            // Apple can unlink the account from outside the app (Settings → Sign in with Apple):
+            // check once on launch, and listen in case it happens while the app is open.
+            .task { await auth.checkCredential() }
+            .onReceive(NotificationCenter.default.publisher(
+                for: ASAuthorizationAppleIDProvider.credentialRevokedNotification).receive(on: RunLoop.main)) { _ in
+                auth.signOut()
+            }
             #if DEBUG
+            .task { Auth.selfCheck() }
             .task { DebugSnapshots.runIfRequested(router, auth) }
             #endif
             // wordsword://define            → focus the input (future widget)
