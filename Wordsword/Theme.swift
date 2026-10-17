@@ -162,7 +162,7 @@ struct DoodleStroke: Shape {
     }
 }
 
-/// The wordmark: "wordsword" with the pen underline. Used on home and onboarding.
+/// The wordmark: "wordsword" with the pen underline. Used on the splash and onboarding; Home wears the knight.
 struct Wordmark: View {
     var font: Font = .logo
     var body: some View {

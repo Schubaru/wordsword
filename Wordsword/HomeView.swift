@@ -39,6 +39,10 @@ struct HomeView: View {
     /// College rule, scaled with the text size — the writing grows, so the lines it sits on grow with
     /// it. Everything in the writing block is a whole number of these.
     @ScaledMetric(relativeTo: .body) private var rule: CGFloat = 28
+    /// The knight swings when you come back from a word you typed or said — not from a tap on a word
+    /// you already had. Set on the way out, spent on the way home.
+    @State private var swingOnReturn = false
+    @State private var swing = 0
     /// Where the writing starts, in screen coordinates. The rules are phased to it rather than the
     /// content being nudged onto them: the paper moves by up to a line and nobody sees it, whereas
     /// moving the input would show.
@@ -124,6 +128,11 @@ struct HomeView: View {
         .onChange(of: router.focusInput) { _, f in if f { router.focusInput = false; raiseKeyboard() } }
         .onChange(of: router.path) { _, p in
             if p.isEmpty {
+                if swingOnReturn {
+                    swingOnReturn = false
+                    // Wait out the pop so the swing lands on a page that's already there.
+                    if !reduceMotion { Task { try? await Task.sleep(for: .milliseconds(320)); swing += 1 } }
+                }
                 input = ""; alternates = []; clearHint()
                 withAnimation(reduceMotion ? nil : Motion.state) { trail = LastSearch.chain }
                 // Back from a definition with no keyboard: the sheet is what you want to see next.
@@ -159,10 +168,10 @@ struct HomeView: View {
         #endif
     }
 
-    // MARK: header — wordmark, library, settings
+    // MARK: header — the knight, library, settings
     private var header: some View {
         HStack {
-            Wordmark()
+            KnightMark(swing: swing).frame(width: 44, height: 44)
             Spacer()
             GlassIcon("books.vertical", "Library") { router.path.append(.library) }
             GlassIcon("gearshape", "Settings") { router.path.append(.settings) }
@@ -380,6 +389,7 @@ struct HomeView: View {
         let w = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !w.isEmpty else { return }
         alternates = []
+        swingOnReturn = true
         router.path.append(.define(w))
     }
 
@@ -413,6 +423,7 @@ struct HomeView: View {
         case .word(let w):
             pulse(.impact(flexibility: .rigid))
             input = ""
+            swingOnReturn = true
             router.path.append(.define(w))
             return                                          // the chat takes over; nothing to type into here
         case .uncertain(let text, let picks):

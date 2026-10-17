@@ -84,9 +84,10 @@ struct SwordDoodle: View {
 }
 
 // MARK: - The knight
-/// Poses: idle · jab (thinking/loading) · cheer (right, done) · slump (wrong). Only the sword arm and the head
-/// move, so it can animate between poses with plain SwiftUI transforms.
-enum KnightPose { case idle, jab, cheer, slump }
+/// Poses: idle · jab (thinking/loading) · cheer (right, done; also the swing's wind-up) · slash (the swing's
+/// strike) · slump (wrong). Only the sword arm and the head move, so it can animate between poses with plain
+/// SwiftUI transforms.
+enum KnightPose { case idle, jab, cheer, slash, slump }
 
 struct KnightDoodle: View {
     var pose: KnightPose = .idle
@@ -94,10 +95,10 @@ struct KnightDoodle: View {
     var accent: Color? = nil          // plume; nil = same as color
 
     private var swordAngle: Double {   // rotation of the sword arm around the shoulder, degrees (0 = idle ↗)
-        switch pose { case .idle: 0; case .jab: 38; case .cheer: -55; case .slump: 118 }
+        switch pose { case .idle: 0; case .jab: 38; case .cheer: -55; case .slash: 100; case .slump: 118 }
     }
     private var headTilt: Double { pose == .slump ? 14 : (pose == .cheer ? -6 : 0) }
-    private var bodyLean: Double { pose == .jab ? 8 : 0 }
+    private var bodyLean: Double { pose == .jab || pose == .slash ? 8 : 0 }
 
     var body: some View {
         GeometryReader { g in
@@ -185,6 +186,49 @@ struct KnightSwordArm: Shape {
         p.addLine(to: P(r, 0.94, 0.14))
         p.addLine(to: P(r, 0.75, 0.49))
         p.move(to: P(r, 0.735, 0.465)); p.addLine(to: P(r, 0.90, 0.20))                                  // fuller
+        return p
+    }
+}
+
+// MARK: - Home's title
+/// The knight stands where the wordmark was. Bump `swing` and he swings once: wind-up over the helmet,
+/// a strike that leaves a pen arc behind the blade tip, back to rest. Callers skip the bump under
+/// Reduce Motion — a swing has no crossfade version.
+struct KnightMark: View {
+    var swing: Int
+
+    private enum Beat: CaseIterable { case rest, windup, strike }
+
+    var body: some View {
+        PhaseAnimator(Beat.allCases, trigger: swing) { beat in
+            ZStack {
+                SwingArc()
+                    .trim(from: beat == .strike ? 0.35 : 0, to: beat == .windup ? 0 : 1)
+                    .stroke(Color.pen, style: .init(lineWidth: 1.6, lineCap: .round))
+                    .opacity(beat == .strike ? 1 : 0)
+                KnightDoodle(pose: beat == .windup ? .cheer : beat == .strike ? .slash : .idle,
+                             color: .ink, accent: .pen)
+            }
+        } animation: { beat in
+            switch beat {
+            case .windup: .timingCurve(0.3, 0, 0.2, 1, duration: 0.2)       // gather
+            case .strike: .timingCurve(0.16, 1, 0.3, 1, duration: 0.22)     // ease-out-expo: the cut
+            case .rest:   .spring(response: 0.4, dampingFraction: 0.75)     // settle, tiny overshoot
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("wordsword")
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The path the blade tip takes from wind-up to strike, around KnightDoodle's shoulder (0.56, 0.44).
+private struct SwingArc: Shape {
+    func path(in r: CGRect) -> Path {
+        let s = min(r.width, r.height)
+        var p = Path()
+        p.addArc(center: CGPoint(x: r.minX + 0.56 * s, y: r.minY + 0.44 * s), radius: 0.5 * s,
+                 startAngle: .degrees(-93), endAngle: .degrees(62), clockwise: false)
         return p
     }
 }
