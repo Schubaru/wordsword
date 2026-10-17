@@ -367,6 +367,10 @@ struct PaperScreen<Trailing: View>: ViewModifier {
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .onRule(2, spacing: rule)
                 .background { probe(TitleTop.self) }
+                // `onRule` puts the baseline on the row's bottom edge, so descenders — and whatever
+                // the screen puts first — land in the same band as the title. One rule of clearance
+                // keeps them apart and still starts the content on a rule.
+                .padding(.bottom, rule)
                 .accessibilityAddTraits(.isHeader)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

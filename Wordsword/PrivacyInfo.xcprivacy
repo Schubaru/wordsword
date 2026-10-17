@@ -15,7 +15,7 @@
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
 			<!-- CA92.1: defaults readable and writable only by this app. Verified against
 			     Apple's TN3183, fetched 2026-08-23. The app uses UserDefaults.standard only
-			     (Auth.swift:95, LastSearch.swift:13) — no App Group, no extension, so the
+			     (Auth.swift:95, LastSearch.swift:13, Games/WordWheelSave.swift) — no App Group, no extension, so the
 			     App Group code 1C8F.1 does not apply. -->
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>

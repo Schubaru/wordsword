@@ -26,7 +26,7 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 
 ## Typography (system fonts, Dynamic Type)
 
-- Home input ("ghost"): SF Rounded bold 38pt, no box — placeholder in ink-2 @ 80% (large text, ≥3:1).
+- Search field: SF Rounded bold `.title3` — the headword's hand, one size down — placeholder in ink-2 @ 80%. (`Font.ghost`, the 38pt no-box input, is retired.)
 - Headword & wordmark: SF Rounded, bold, `.largeTitle`.
 - Definition: New York serif (`.fontDesign(.serif)`), `.title3`. It's a book.
 - Pronunciation: SF Rounded semibold `.footnote` at ink-2 — `SANG-gwin`, quiet enough to skip.
@@ -35,8 +35,8 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 
 ## Layout (Natural-AI patterns, wordsword content)
 
-- **Home:** the knight (`KnightMark`, 44pt, VoiceOver "wordsword") + 2 glass icon buttons — he swings once when you come back from a word you typed or said (not a tapped one; skipped under Reduce Motion); giant ghost input on the paper; a draggable **bottom sheet** holding the previous word + the rest of the recent words, oldest last, ending in a quiet "All N words" line. Word of the day is a `pen-wash` capsule resting on a rule under the input — a scrap laid on the page, not a card and not an action.
-- **The rules are a baseline grid, not wallpaper (Home).** Every line of the writing block — ghost input, hint/listening rule, the word of the day — is a whole number of college rules tall with its baseline sitting on the rule that closes it, so text is written *on* the paper instead of floating over it. The rules are phased to the top of that block (measured, since the safe area differs per device) rather than the block being nudged onto them, and the rule spacing scales with Dynamic Type so the alignment survives every text size. `.onRule(_:spacing:)` in `Theme.swift` is the whole mechanism. The previous-word card runs the same grid at a 22pt rule, phased by its own 18pt inset. The top-bar buttons sit above the grid — they're chrome — but the title is writing and lands on a rule (see Headers).
+- **Home:** the knight (`KnightMark`, 44pt, VoiceOver "wordsword") + 2 glass icon buttons — he swings once when you come back from a word you typed or said (not a tapped one; skipped under Reduce Motion); the paper under him is the page's free space — Word of the day is a `pen-wash` capsule resting on a rule — a scrap laid on the page, not a card and not an action — and the games entry sits under it (`paperContent` in `HomeView.swift`). Below, a draggable **bottom sheet** that *is* the search. The **search field is pinned at the top of the sheet** (rounded bold type, `sheet` fill, the 1pt `rule` edge every container wears, turning `pen` while focused; magnifier in `ink-2`; no submit button — the keyboard's "go" does it), `Hold to speak` written on the sheet's first rule under it, then the recent words newest first, ending in a quiet "All N words" line. The **previous word is the first row**, no special treatment — the same row as every other word, plus a `from sanguine › optimistic` footnote when it ends a chain; tapping it resumes that chain. Home opens expanded with the field focused; focusing the field (a tap, a deep link, a voice miss) opens the sheet to just under the header, losing focus leaves it where it is — a scroll that dismissed the keyboard mid-list must not snap the list away — and the handle is how it goes down. The sheet rides above the keyboard by itself (its container shrinks with it), so nothing is choreographed out of the keyboard's way any more.
+- **The rules are a baseline grid, not wallpaper (Home).** Every line written on the paper — the word of the day, anything else in `paperContent` — is a whole number of college rules tall with its baseline sitting on the rule that closes it, so text is written *on* the paper instead of floating over it. The rules are phased to the top of that block (measured, since the safe area differs per device) rather than the block being nudged onto them, and the rule spacing scales with Dynamic Type so the alignment survives every text size. `.onRule(_:spacing:)` in `Theme.swift` is the whole mechanism. The sheet draws no rules of its own; the one line it writes on (the hint under the search field) draws its own hairline at the footnote's baseline, measured from the font, so the descenders stay inside the row. The top-bar buttons sit above the grid — they're chrome — but the title is writing and lands on a rule (see Headers).
 - **Pronunciation:** the respelling sits on its own line directly under the headword (2pt gap — it
   belongs to the word, not to the answer, so it rides the slash in rather than fading with the
   definition). Tapping the speaker beside it says the word. Shown on Define and on the flashcard
@@ -64,7 +64,9 @@ custom header instead, via `.paperScreen(_:trailing:)`.
 - **The title is written on the paper**, two rules tall with its baseline on the rule that closes it
   — the same grid the home input writes on, so a screen title reads like a headword rather than
   chrome. It's static: no large-title collapse on scroll, because a title that slides off the rule
-  it sits on is worse than one that stays.
+  it sits on is worse than one that stays. One rule of clearance follows it: the baseline *is* the
+  row's bottom edge, so without it the descenders and the screen's first row (a list's section
+  header, say) share a band and collide once the list scrolls.
 - **The paper is phased to the title, not the title nudged onto the paper.** The gap between them is
   the top safe area (per device) plus the button row, so both ends are measured in the same global
   space and the difference sets `topInset`. That lands identically on a pushed screen (paper starts
@@ -99,26 +101,27 @@ Both halves ride on requests the app already makes, so saying a word costs no ex
 
 ## Voice — hold to speak (`Voice.swift`)
 
-The home input does double duty: **tap to type, hold to speak**. `Hold to speak` sits under the ghost
-input as its description line, and the hold target is an invisible catcher over the input + that line
+The search field does double duty: **tap to type, hold to speak**. `Hold to speak` sits under the
+field as its description line, and the hold target is an invisible catcher over the field + that line
 (a long press on a live `UITextField` belongs to the loupe and paste menu; the catcher is only
-hit-testable while the field is empty, so typing keeps every gesture it had).
+hit-testable while the field is empty, so typing keeps every gesture it had). The field lives on a
+draggable sheet, so a finger that travels more than 12pt is dragging, not holding: the hold is dropped
+silently and the release neither speaks nor raises the keyboard.
 
 - **The transition is one number.** `VoiceListener.hold` runs 0 → 1 across the press and *everything*
-  reads it directly — header fade, sheet retreat, placeholder crossfade, the rule drawing in. So the
+  reads it directly — header fade, the list under the field receding, placeholder crossfade, the rule
+  drawing in. So the
   change tracks the finger instead of snapping when a timer fires, and a hold released early rewinds
   from wherever it got to. The mic commits at `hold == 1` (600ms), with the engine starting at 200ms
   so no first syllable is clipped.
-- **The signature move: the ruled line listens.** The hairline under the input is redrawn in `pen` as
+- **The signature move: the ruled line listens.** The hairline under the field is redrawn in `pen` as
   `ListeningRule` — a polyline over the last 56 mic samples, tapered at both ends. Silence is a
   dead-flat line, i.e. the same rule that was already there; speaking is the page coming alive. Same
   `.doodle()` stroke as every other hand-drawn mark. No mic glyph, no pulsing badge, no new metaphor.
 - **Ink marks certainty.** The live hypothesis renders in the ghost type at `ink-2`; it firms to `ink`
   the moment the recogniser calls the transcript final.
-- Placeholder crossfades `type a word` → `say a word` so the line never blinks empty. Header drops to
-  15%, the bottom sheet slides down and fades out — voice gets the whole page.
-- Long text (a phrase voice hands over, or a long typed word) steps the ghost type down 38 → 31 → 26pt
-  rather than scrolling its own beginning out of view.
+- Placeholder crossfades `type a word` → `say a word` so the line never blinks empty. Header and the
+  paper drop to 15%, the list under the field fades out — voice gets the field and its line.
 
 **Release:** one clean word → straight to the definition. Anything less certain → the text lands in
 the input with the keyboard up and the candidates offered as `.primary` chips under
@@ -163,3 +166,38 @@ until you stop talking.
 `CTAStyle` is the one full-width action, in three weights: **filled** (pen fill, on-pen text), **outlined** (sheet fill, 1pt rule border, ink text, ink @ 6% on press), **quiet** (ink-2, no fill). Used across onboarding, the account flow and the account prompts, so "this is the button that moves me forward" is learned once. `PressStyle` is the chip/pill press (0.96 scale, 120ms); `SurfacePressStyle` is the same beat for a tappable card (0.98 scale + ink @ 6% in the card's own shape); `SheetRowButtonStyle` is the grouped-list row press.
 
 `GlassIcon` is the one top-bar button — a 44pt circle of glass around an `ink` symbol, Liquid Glass on the iOS 26 SDK and `.ultraThinMaterial` below it. Home's library and settings, Define's back, and the back and actions on every pushed screen are all this button, so "the round glass thing is a top-bar action" is learned once. 44pt whatever the glyph: that's the tap target.
+
+## Games (`Games/`)
+
+Games are a pushed area, entered from one pen-wash scrap on the Home paper under the word of the day
+(`GamesEntry`, written on the same two-rule grid). `GamesHubView` lists each game as a grouped row,
+plus **Words found** — every word a game has turned up, newest first, each a button into Define.
+That is the rule for every game here: *a word you find is a word you can look up.*
+
+**Word Wheel** (`WordWheelView`, logic in `WordWheel`, levels in `WordWheelLevels`, numbers in
+`WordWheelRules`, progress in `WordWheelSave`):
+
+- **The wheel is a round sheet** lying on the paper (rule edge, shadow). Letters sit on its rim in
+  SF Rounded bold; a connected letter takes the current-token treatment (pen fill, on-pen text,
+  1.08 scale) and the line between letters is the `.doodle()` pen stroke, running on to the fingertip.
+  Dragging back onto the previous letter undoes the last one. Release with three or more letters submits.
+- **The capsule** above the wheel shows the word being spelled (pen fill, `.headword`, uppercase —
+  these are game pieces, not headwords). A found word lifts 8pt and fades; an unknown one shakes
+  ±6pt; an already-found one wobbles ±2pt. Captions ("Already found", "Not a word I know",
+  "+15 — bonus word", "Find a few more words first") land on the rule under the board for ~2s.
+- **The board** is tiles on the paper: sheet fill + 1pt rule edge, blank until found; letters write
+  in 40ms apart (the tag stagger). A hint-revealed tile sits on pen-wash so it reads as "given".
+  Hint = tap the lightbulb, then any blank tile (blanks get a pen-wash wash and a pen edge while picking).
+- **Chips:** "N bonus" (leading, opens the bonus-word sheet) and "×2" (trailing, only while a streak
+  tier is live). A broken streak just removes the chip — nothing turns red, no nagging.
+- **Header:** back glass icon · 44pt knight (cheer on a word, slump on a miss, like flashcards) ·
+  coin pill (a doodled coin + count on pen-wash). Level complete: knight cheer at 96pt on a sheet
+  sliding up from the bottom with the coin tally and one `CTAStyle` "Next level".
+- **Haptics:** `.selection` per letter, rigid on a board word, soft on a bonus or repeat, warning on
+  a miss, success on level complete. Reduced motion collapses everything to crossfades; haptics stay.
+- **VoiceOver:** the wheel is one element with a "Type a word" action (the typed word must still come
+  from the wheel's letters); every tile and chip is labelled; captions are announced.
+- **Levels are generated, not authored** — see `WordWheelLevels.swift`. Level N is the same on every
+  phone forever; ten 4-letter levels, ten 5-letter, then 6 and 7 alternate; every level's seed word
+  uses all its letters. Word lists are public domain (ENABLE, 12dicts) and rebuilt by
+  `Scripts/make-wordlists.py`.

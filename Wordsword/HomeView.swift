@@ -5,9 +5,10 @@ import SwiftData
 /// down to make room for the keyboard, this is what's left of it.
 private let sheetGrabber: CGFloat = 27
 
-/// Home = a sheet of ruled paper with one giant ghost input, and a sheet you can pull up for what you already know
-/// (word of the day, recent words). Natural-AI layout, wordsword content.
-/// The input line does double duty: tap it to type, hold it to speak (see `Voice.swift`).
+/// Home = a sheet of ruled paper (the word of the day, and whatever else gets written on the page)
+/// with a sheet you can pull up from the bottom. The sheet is where words are looked up: a search
+/// field pinned at its top, your recent words under it. Natural-AI layout, wordsword content.
+/// The search field does double duty: tap it to type, hold it to speak (see `Voice.swift`).
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(\.modelContext) private var context
@@ -16,14 +17,15 @@ struct HomeView: View {
     @Query(sort: \Word.lastLookedUp, order: .reverse) private var words: [Word]
     @State private var input = ""
     @State private var limit = 10
-    @State private var expanded = false
-    @State private var sheetDown = false       // keyboard territory: only the grabber left on screen
+    /// Home is born expanded: the field is focused on launch, and the sheet is the search surface.
+    @State private var expanded = true
     @State private var voice = VoiceListener()
     @State private var hint: String?
     @State private var hintOffersSettings = false
     @State private var alternates: [String] = []
     @State private var voiceText = ""          // what the mic put in the field; edits past this drop the chips
     @State private var pressing = false
+    @State private var dragged = false         // the finger left the field: it's dragging the sheet, not holding
     @State private var hintTask: Task<Void, Never>?
     @State private var beat = 0
     @State private var beatKind = SensoryFeedback.warning
@@ -31,13 +33,14 @@ struct HomeView: View {
     @State private var trail: [String] = []
     @FocusState private var focused: Bool
 
-    /// The previous-word card plus the first recent word, at rest. A chain adds its "from …" line,
-    /// so the peek grows with it rather than clipping that row out of view — and the whole number is
-    /// scaled, because at accessibility sizes the card alone is taller than a fixed 220 ever was.
-    @ScaledMetric(relativeTo: .body) private var peekBase: CGFloat = 220
+    /// How much list shows under the search field at rest: the previous word and the next one down.
+    /// A chain adds its "from …" line, so the peek grows with it rather than clipping that row out of
+    /// view — and the whole number is scaled, so two rows stay two rows at accessibility sizes.
+    @ScaledMetric(relativeTo: .body) private var rowsPeek: CGFloat = 100
+    @ScaledMetric(relativeTo: .body) private var chainLine: CGFloat = 20
 
     /// College rule, scaled with the text size — the writing grows, so the lines it sits on grow with
-    /// it. Everything in the writing block is a whole number of these.
+    /// it. Everything written on the paper is a whole number of these.
     @ScaledMetric(relativeTo: .body) private var rule: CGFloat = 28
     /// The knight swings when you come back from a word you typed or said — not from a tap on a word
     /// you already had. Set on the way out, spent on the way home.
@@ -45,17 +48,11 @@ struct HomeView: View {
     @State private var swing = 0
     /// Where the writing starts, in screen coordinates. The rules are phased to it rather than the
     /// content being nudged onto them: the paper moves by up to a line and nobody sees it, whereas
-    /// moving the input would show.
+    /// moving the writing would show.
     @State private var gridTop: CGFloat = 0
-    /// The previous-word card writes on the same paper at a smaller rule, inset by `cardPad` — which
-    /// doubles as the phase, so line one lands on rule one.
-    @ScaledMetric(relativeTo: .body) private var cardRule: CGFloat = 22
-    private let cardPad: CGFloat = 18
-    private var sheetPeek: CGFloat { trail.count > 1 ? peekBase + 20 : peekBase }
-
-    /// Down leaves exactly the grab handle, which ends up sitting on the keyboard's top edge —
-    /// enough to say the drawer is still there, little enough to stay out of the way.
-    private var sheetOffset: CGFloat { sheetDown ? sheetPeek - sheetGrabber : 0 }
+    /// The sheet writes at a smaller rule than the page: the line under the search field is one of these.
+    @ScaledMetric(relativeTo: .body) private var sheetRule: CGFloat = 22
+    private var sheetPeek: CGFloat { trail.count > 1 ? rowsPeek + chainLine : rowsPeek }
 
     /// 0 → typing, 1 → mic committed. Everything that recedes for voice reads this directly, so the
     /// whole transition tracks the finger instead of snapping when a timer fires.
@@ -80,27 +77,32 @@ struct HomeView: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     header.opacity(1 - 0.85 * toVoice)
-                    ghostInput
+                    paperContent
                         .background(GeometryReader { g in
                             Color.clear.preference(key: GridTop.self, value: g.frame(in: .global).minY)
                         })
-                        .padding(.top, 64)
+                        .padding(.top, 16)
+                        .opacity(fadeOut(toVoice))
+                        .allowsHitTesting(toVoice == 0)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 20)
                 .onPreferenceChange(GridTop.self) { gridTop = $0 }
 
+                // The sheet holds the search: the field is pinned under the grabber and the list
+                // scrolls beneath it. It rides above the keyboard on its own (the container shrinks),
+                // so typing never has to push it out of the way.
                 BottomSheet(expanded: $expanded, peek: sheetPeek) {
+                    searchBlock
+                } content: {
                     sheetContent
+                        // Voice gets the sheet: the list recedes and only the field and its line stay.
+                        .opacity(1 - toVoice)
+                        .allowsHitTesting(toVoice == 0)
                 } onGrab: {
-                    // Reaching for the handle IS the request to stop typing: the sheet comes back
-                    // with the finger rather than 200ms behind it.
+                    // Reaching for the handle IS the request to stop typing.
                     focused = false
-                    withAnimation(reduceMotion ? nil : Motion.sheet) { sheetDown = false }
                 }
-                    .opacity(1 - toVoice)
-                    .offset(y: 160 * toVoice + sheetOffset)
-                    .allowsHitTesting(toVoice == 0)
             }
             .navigationDestination(for: Route.self) { route in
                 switch route {
@@ -110,11 +112,14 @@ struct HomeView: View {
                 case .wordlist(let id):     WordlistDetailView(listID: id)
                 case .flashcards(let id):   FlashcardsView(listID: id)
                 case .settings:             SettingsView()
+                case .games:                GamesHubView()
+                case .wordWheel:            WordWheelView()
+                case .wordsFound:           WordsFoundView()
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
         }
-        // The input is the home page, so it opens with the keyboard already up. Focus can't be taken
+        // The search is the home page, so it opens with the keyboard already up. Focus can't be taken
         // on the tick the view is inserted — the assignment is silently dropped and the keyboard never
         // comes up — so wait out the splash's reveal first. Same reason as AccountFlow's step focus.
         .task {
@@ -122,7 +127,6 @@ struct HomeView: View {
             try? await Task.sleep(for: .milliseconds(380))
             guard !Task.isCancelled else { return }
             router.focusInput = false      // a deep link that landed before Home existed is satisfied here
-            sheetDown = true               // unanimated: it was never on screen to slide off it
             focused = true
         }
         .onChange(of: router.focusInput) { _, f in if f { router.focusInput = false; raiseKeyboard() } }
@@ -135,11 +139,16 @@ struct HomeView: View {
                 }
                 input = ""; alternates = []; clearHint()
                 withAnimation(reduceMotion ? nil : Motion.state) { trail = LastSearch.chain }
-                // Back from a definition with no keyboard: the sheet is what you want to see next.
-                withAnimation(reduceMotion ? nil : Motion.sheet) { sheetDown = false }
+                // Back from a definition with no keyboard: the page, with the sheet at rest.
+                withAnimation(reduceMotion ? nil : Motion.sheet) { expanded = false }
             }
         }
-        .onChange(of: focused) { _, f in if !f { returnSheet() } }
+        // Typing opens the sheet all the way, whichever way focus arrived (a tap on the field, a deep
+        // link, a voice miss): the field moves up under the header and the list fills what's left
+        // above the keyboard. Losing focus leaves the sheet where it is — a scroll that dismissed
+        // the keyboard mid-list must not snap the list away from under the finger; the handle is
+        // how the sheet goes down.
+        .onChange(of: focused) { _, f in if f { withAnimation(reduceMotion ? nil : Motion.sheet) { expanded = true } } }
         .onChange(of: input) { _, v in
             if !alternates.isEmpty, v != voiceText { withAnimation(Motion.state) { alternates = [] } }
         }
@@ -179,28 +188,63 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
-    // MARK: the input — giant ghost text on the paper, no box. The whole point of the home page.
-    private var ghostInput: some View {
-        // Spacing 0: the caption already reserves a row for "Listening — release to define", so the
-        // two items below set their own gap rather than inheriting one on top of that reserved space.
-        // Rules, not gaps: every row below is a whole number of college rules tall with its baseline
-        // on the rule that closes it, so the block reads as writing on the page rather than floating
-        // over it. Spacing stays 0 — the rows already carry their own height.
+    // MARK: the paper — what's written on the page under the header
+    /// The search moved into the sheet, so the page is free: the word of the day today; the games
+    /// entry (word-wheel session) is added here next. Rows go on the grid with `.onRule(_:spacing: rule)`.
+    @ViewBuilder private var paperContent: some View {
+        wordOfTheDay
+        GamesEntry(rule: rule)
+    }
+
+    // MARK: the search — pinned at the top of the sheet. The whole point of the home page.
+    /// The field, then the line under it. Spacing 0: the caption already reserves a row for
+    /// "Listening — release to define", so nothing inherits a gap on top of that reserved space.
+    private var searchBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                inputLine.onRule(2, spacing: rule)
+                searchField
                 caption
             }
             .overlay { holdCatcher }
-            // The chips and the suggestion want the same slot, and the chips are the live task.
-            if alternates.isEmpty {
-                wordOfTheDay
-                    .opacity(fadeOut(toVoice))
-                    .allowsHitTesting(toVoice == 0)
-            } else {
-                didYouMean.padding(.top, 14)
+            if !alternates.isEmpty { didYouMean.padding(.top, 10).padding(.bottom, 6) }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 2)
+    }
+
+    /// A search field in the app's own hand: rounded bold type, `sheet` fill with the 1pt `rule` edge
+    /// every container wears, and the edge turns `pen` while the field has focus — pen marks focus,
+    /// nothing else does. No submit button: the keyboard's "go" already does it.
+    private var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.body.weight(.semibold)).foregroundStyle(Color.ink2)
+                .accessibilityHidden(true)
+            inputLine
+            if !input.isEmpty {
+                Button {
+                    input = ""; alternates = []
+                } label: {
+                    Image(systemName: "xmark.circle.fill").font(.body).foregroundStyle(Color.ink2)
+                        .frame(width: 32, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear")
+                .transition(.opacity)
             }
         }
+        .padding(.leading, 14)
+        .padding(.trailing, input.isEmpty ? 14 : 6)
+        .frame(minHeight: 48)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.sheet)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(focused ? Color.pen : Color.rule, lineWidth: 1)
+                }
+        }
+        .animation(reduceMotion ? nil : Motion.state, value: focused)
+        .animation(reduceMotion ? nil : Motion.state, value: input.isEmpty)
     }
 
     /// Word of the day: a suggestion, not a task, so it stays at footnote weight and reads *after*
@@ -241,27 +285,19 @@ struct HomeView: View {
             }
     }
 
-    /// One line, always legible: past ~11 characters the ghost type steps down rather than letting the
-    /// field scroll its own beginning out of view.
-    private var inputFont: Font {
-        switch max(input.count, voice.heard.count) {
-        case 17...: .system(size: 26, weight: .bold, design: .rounded)
-        case 12...: .system(size: 31, weight: .bold, design: .rounded)
-        default:    .ghost
-        }
-    }
+    /// The headword's hand, one size down: the same rounded bold as the ghost input was, at a text
+    /// style so it scales. A long phrase scrolls inside the field rather than stepping down.
+    private let inputFont = Font.system(.title3, design: .rounded).weight(.bold)
 
     private var inputLine: some View {
         ZStack(alignment: .leading) {
             // The placeholder crossfades rather than swapping, so the line never blinks empty.
             if input.isEmpty, voice.heard.isEmpty {
-                Text("type a word").font(.ghost).foregroundStyle(Color.ink2.opacity(0.8))
+                Text("type a word").font(inputFont).foregroundStyle(Color.ink2.opacity(0.8))
                     .opacity(fadeOut(toVoice))
-                Text("say a word").font(.ghost).foregroundStyle(Color.ink2.opacity(0.8))
+                Text("say a word").font(inputFont).foregroundStyle(Color.ink2.opacity(0.8))
                     .opacity(fadeIn(toVoice))
             }
-            // No submit button on the line: the keyboard's own "go" key already does it, and the
-            // field is never live without the keyboard up.
             TextField("", text: $input)
                 .font(inputFont).foregroundStyle(Color.ink)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -270,7 +306,7 @@ struct HomeView: View {
                 .onSubmit(go)
                 .opacity(fadeOut(toVoice))
                 .accessibilityLabel("Word to define")
-                .accessibilityHint("Hold this line to speak the word instead")
+                .accessibilityHint("Hold the field to speak the word instead")
                 .accessibilityAction(named: "Speak a word", speakAction)
             // What the mic has so far, in the same hand as the typed line. Grey while it's still a
             // guess, ink once the recogniser commits — the ink firming up is the "I got that" cue.
@@ -287,37 +323,48 @@ struct HomeView: View {
         .animation(reduceMotion ? nil : Motion.state, value: input.isEmpty)
     }
 
-    /// The line under the input. Idle it's the invitation; held, it's the paper rule waking up — so
-    /// the two share a guide: the hint's baseline and the wave's centre both sit on the same college
-    /// rule, and one becomes the other in place, on the line, rather than near it.
+    /// The line under the field. Idle it's the invitation, written on the sheet's first rule; held,
+    /// it's that rule waking up — so the two share a guide: the hint's baseline and the wave's centre
+    /// both sit on the same hairline, and one becomes the other in place, on the line, rather than
+    /// near it. The sheet draws no rules of its own, so this row draws the one it sits on — at the
+    /// baseline, measured from the font, so the descenders stay inside the row instead of hanging
+    /// into the next one.
     private var caption: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                // Side by side while it fits; stacked once the text size says it doesn't.
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) { hintText; settingsLink }
-                    VStack(alignment: .leading, spacing: 4) { hintText; settingsLink }
-                }
-                .opacity(input.isEmpty ? fadeOut(toVoice) : 0)
-                .alignmentGuide(.bottom) { $0[.lastTextBaseline] }
-
+            // Side by side while it fits; stacked once the text size says it doesn't.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) { hintText; settingsLink }
+                VStack(alignment: .leading, spacing: 4) { hintText; settingsLink }
+            }
+            .opacity(input.isEmpty ? fadeOut(toVoice) : 0)
+            .frame(minHeight: sheetRule, alignment: .bottom)
+            .padding(.horizontal, 14)        // written inside the field's edges, like the text above it
+            .frame(maxWidth: .infinity, alignment: .leading)   // the rule runs the sheet's width, like every row's
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(Color.paperRule).frame(height: 1).padding(.bottom, footnoteDescent)
+            }
+            .overlay(alignment: .bottom) {
                 ListeningRule(levels: voice.levels, draw: reduceMotion ? 1 : CGFloat(fadeIn(toVoice, from: 0.35)))
                     .doodle(.pen, width: 2)
                     .frame(height: 22)        // a Shape is greedy; pin it or it grows the whole row
+                    .padding(.horizontal, 14)
                     .opacity(fadeIn(toVoice, from: 0.35))
                     .allowsHitTesting(false)
-                    .alignmentGuide(.bottom) { $0[VerticalAlignment.center] }
+                    .alignmentGuide(.bottom) { $0[VerticalAlignment.center] + footnoteDescent }
             }
-            .onRule(spacing: rule)
-            // Motion is never the only signal that the mic is live. Idle it's a blank rule of paper,
-            // which is what keeps the word of the day from moving when the mic comes up.
+            // Motion is never the only signal that the mic is live. Idle it's a blank rule of the
+            // sheet, which is what keeps the list from moving when the mic comes up.
             Text("Listening — release to define")
                 .font(.caption).foregroundStyle(Color.ink2)
+                .padding(.horizontal, 14)
                 .opacity(fadeIn(toVoice))
-                .onRule(spacing: rule)
+                .frame(minHeight: sheetRule, alignment: .bottom)
                 .accessibilityHidden(toVoice == 0)
         }
     }
+
+    /// How far the footnote's descenders reach under its baseline, at the current text size.
+    private var footnoteDescent: CGFloat { -UIFont.preferredFont(forTextStyle: .footnote).descender }
 
     private var hintText: some View {
         Text(hint ?? "Hold to speak").font(.footnote).foregroundStyle(Color.ink2)
@@ -346,44 +393,34 @@ struct HomeView: View {
         .transition(.opacity.combined(with: .offset(y: 6)))
     }
 
-    /// Tap to type, hold to speak. It sits over the input rather than on it: a long press on a live
-    /// UITextField belongs to the loupe and the paste menu, and fighting those loses.
+    /// Tap to type, hold to speak. It sits over the field rather than on it: a long press on a live
+    /// UITextField belongs to the loupe and the paste menu, and fighting those loses. The field now
+    /// lives on a draggable sheet, so a finger that travels is dragging, not holding: the hold is
+    /// dropped silently and the release neither speaks nor raises the keyboard.
     private var holdCatcher: some View {
         Color.clear
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { _ in if !pressing { pressing = true; startHold() } }
-                    .onEnded { _ in if pressing { pressing = false; endHold() } }
+                    .onChanged { v in
+                        if !pressing, !dragged { pressing = true; startHold() }
+                        if pressing, hypot(v.translation.width, v.translation.height) > 12 {
+                            pressing = false; dragged = true; voice.abort()
+                        }
+                    }
+                    .onEnded { _ in
+                        if pressing { pressing = false; endHold() }
+                        dragged = false
+                    }
             )
             .allowsHitTesting(input.isEmpty)   // once there's text to edit, the field gets its gestures back
             .accessibilityHidden(true)
     }
 
-    // MARK: - keyboard choreography
-    // The sheet and the keyboard both live in the bottom 220pt. Moving them at once reads as two
-    // things passing through each other, so they take turns: sheet out, then keyboard in, and the
-    // reverse on the way back. The tap is ours to time — `holdCatcher` sets focus, not UIKit — so
-    // the sequence is real rather than a guess at the keyboard's curve.
-
-    private func raiseKeyboard() {
-        guard !focused else { return }
-        // Leaving is quicker than arriving: ease-out-quint, clear before the keyboard starts.
-        withAnimation(reduceMotion ? nil : Motion.sheetExit) { sheetDown = true; expanded = false }
-        guard !reduceMotion else { focused = true; return }
-        Task {
-            try? await Task.sleep(for: .milliseconds(150))
-            focused = true
-        }
-    }
-
-    private func returnSheet() {
-        Task {
-            if !reduceMotion { try? await Task.sleep(for: .milliseconds(200)) }   // let the keyboard land
-            guard !focused, toVoice == 0 else { return }   // refocused mid-wait, or the mic has the screen
-            withAnimation(reduceMotion ? nil : Motion.sheet) { sheetDown = false }
-        }
-    }
+    // MARK: - keyboard
+    // The sheet sits above the keyboard by itself (its container shrinks with it), so there is no
+    // choreography left: focus the field, and `onChange(of: focused)` opens the sheet with it.
+    private func raiseKeyboard() { focused = true }
 
     private func go() {
         let w = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -468,63 +505,11 @@ struct HomeView: View {
         UIApplication.shared.open(url)
     }
 
-    // MARK: the sheet — where you left off, then recent words
+    // MARK: the sheet — recent words under the search, where you left off first
     @ViewBuilder private var sheetContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            previousWord
-            history
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 40)
-    }
-
-    /// Where the last lookup stopped. Tapping it reopens that chat with the whole trail restored, so a
-    /// chain that wandered `sanguine › optimistic › rosy` comes back as those three tokens with `rosy`
-    /// current — the same breadcrumb the user left, not a fresh lookup of the last word.
-    ///
-    /// The list below picks up from the next word down, so this word appears once: the card earns the slot
-    /// by showing the chain, which a single row can't. Nothing here on a fresh install — the knight's empty
-    /// state already teaches the drawer.
-    @ViewBuilder private var previousWord: some View {
-        if let last = trail.last {
-            Button { router.path.append(.resume(trail)) } label: {
-                HStack(alignment: .firstTextBaseline) {
-                    // Same grid as the page above, one size down: each line closes on one of the card's
-                    // own rules. `cardPad` is both the inset and the rules' phase, which is what puts
-                    // the first rule under the first line instead of through it.
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Your previous word").font(.subheadline.weight(.medium)).foregroundStyle(Color.pen)
-                            .onRule(spacing: cardRule)
-                        Text(last).font(.system(.title, design: .rounded).weight(.bold)).foregroundStyle(Color.ink)
-                            .onRule(2, spacing: cardRule)
-                        if trail.count > 1 {
-                            // Truncate from the head: the words nearest this one are the ones that explain it.
-                            Text("from " + trail.dropLast().joined(separator: " › "))
-                                .font(.footnote).foregroundStyle(Color.ink2)
-                                .lineLimit(1).truncationMode(.head)
-                                .onRule(spacing: cardRule)
-                        }
-                    }
-                    Spacer(minLength: 12)
-                    Image(systemName: "arrow.right").font(.body.weight(.semibold)).foregroundStyle(Color.pen)
-                }
-                .padding(cardPad)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                // A scrap of the same ruled paper, lying on the sheet: the card is the page, not a tint.
-                .background {
-                    Paper(page: .sheet, rule: .paperRule, margin: .clear, spacing: cardRule,
-                          topInset: cardPad, fillsSafeArea: false)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .strokeBorder(Color.rule, lineWidth: 1)
-                        }
-                }
-            }
-            .buttonStyle(SurfacePressStyle(shape: RoundedRectangle(cornerRadius: 18, style: .continuous)))
-            .accessibilityLabel(accessibleTrail(last))
-            .accessibilityHint("Opens where you left off")
-        }
+        history
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
     }
 
     private func accessibleTrail(_ last: String) -> String {
@@ -533,7 +518,7 @@ struct HomeView: View {
             : "Your previous word: \(last)"
     }
 
-    /// Newest first, minus the newest itself — that one is the card above, and repeating it a row
+    /// Newest first, minus the newest itself — that one is the first row, and repeating it a row
     /// later just reads as a duplicate. Matched by word rather than dropping the first row, so an
     /// empty trail (nothing to resume) still lists everything.
     private var recent: [Word] {
@@ -550,28 +535,57 @@ struct HomeView: View {
                         .font(.subheadline).foregroundStyle(Color.ink2)
                 }
             }
-            .padding(.top, 4)
-        } else if !recent.isEmpty {
+            .padding(.top, 16)
+        } else {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(recent.prefix(limit)) { w in
-                    Button { router.path.append(.define(w.text)) } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(w.text).font(.system(.body, design: .rounded).weight(.semibold)).foregroundStyle(Color.ink)
-                            Text(w.partOfSpeech).font(.caption).foregroundStyle(Color.ink2)
-                            Spacer(minLength: 8)
-                            Text(w.definition).font(.subheadline).foregroundStyle(Color.ink2)
-                                .lineLimit(1).frame(maxWidth: 170, alignment: .trailing)
-                        }
-                        .padding(.vertical, 12)
-                        .contentShape(Rectangle())
+                // Where the last lookup stopped, as the first row: same row as every other word, plus
+                // the chain it came from when there is one. Tapping it reopens that chat with the whole
+                // trail restored, so `sanguine › optimistic › rosy` comes back as those three tokens
+                // with `rosy` current — the breadcrumb the user left, not a fresh lookup.
+                if let last = trail.last {
+                    wordRow(last, words.first { $0.text.caseInsensitiveCompare(last) == .orderedSame },
+                            // Truncated from the head: the words nearest this one are the ones that explain it.
+                            subline: trail.count > 1 ? "from " + trail.dropLast().joined(separator: " › ") : nil) {
+                        router.path.append(.resume(trail))
                     }
-                    .buttonStyle(.plain)
-                    .ruled()
-                    .onAppear { if w == recent.prefix(limit).last, limit < recent.count { limit += 10 } }
+                    .accessibilityLabel(accessibleTrail(last))
+                    .accessibilityHint("Opens where you left off")
+                }
+                ForEach(recent.prefix(limit)) { w in
+                    wordRow(w.text, w) { router.path.append(.define(w.text)) }
+                        .onAppear { if w == recent.prefix(limit).last, limit < recent.count { limit += 10 } }
                 }
                 allWords
             }
         }
+    }
+
+    /// One recent word: the word, its part of speech, and the start of its definition pushed to the
+    /// trailing edge. `record` is nil only when a word in the trail never made it into the library.
+    private func wordRow(_ text: String, _ record: Word?, subline: String? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(text).font(.system(.body, design: .rounded).weight(.semibold)).foregroundStyle(Color.ink)
+                    if let record {
+                        Text(record.partOfSpeech).font(.caption).foregroundStyle(Color.ink2)
+                        Spacer(minLength: 8)
+                        Text(record.definition).font(.subheadline).foregroundStyle(Color.ink2)
+                            .lineLimit(1).frame(maxWidth: 170, alignment: .trailing)
+                    } else {
+                        Spacer(minLength: 8)
+                    }
+                }
+                if let subline {
+                    Text(subline).font(.footnote).foregroundStyle(Color.ink2)
+                        .lineLimit(1).truncationMode(.head)
+                }
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .ruled()
     }
 
     /// The list's last line, not a control sitting above it: same left edge, same rhythm, one step
@@ -600,9 +614,13 @@ private struct GridTop: PreferenceKey {
 }
 
 // MARK: - Bottom sheet (Natural-style): peeks at the bottom, drag up to expand, scrolls when expanded.
-struct BottomSheet<Content: View>: View {
+/// `pinned` sits under the grabber and never scrolls — the search field lives there; `content` is
+/// the list beneath it. `peek` is how much of the *content* shows at rest; the grabber and the
+/// pinned block are measured and always show.
+struct BottomSheet<Pinned: View, Content: View>: View {
     @Binding var expanded: Bool
     var peek: CGFloat
+    @ViewBuilder var pinned: Pinned
     @ViewBuilder var content: Content
     /// The handle was touched — dragged or tapped. Either way the user is done with the keyboard.
     var onGrab: () -> Void = {}
@@ -610,12 +628,14 @@ struct BottomSheet<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @GestureState private var drag: CGFloat = 0
     @State private var dragging = false
+    @State private var pinnedHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { g in
             let h = g.size.height
             let fullH = h - 72
-            let restY = expanded ? h - fullH : h - peek          // top edge of the sheet
+            let rest = sheetGrabber + pinnedHeight + peek         // what shows at rest
+            let restY = expanded ? h - fullH : h - rest           // top edge of the sheet
             let y = clamp(restY + drag, lower: h - fullH - 24, upper: max(h - 56, restY))
 
             VStack(spacing: 0) {
@@ -626,6 +646,8 @@ struct BottomSheet<Content: View>: View {
                     .accessibilityLabel(expanded ? "Collapse" : "Expand")
                     .accessibilityAddTraits(.isButton)
                     .onTapGesture { onGrab(); withAnimation(anim) { expanded.toggle() } }
+                pinned
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pinnedHeight = $0 }
                 ScrollView {
                     content
                 }
@@ -639,14 +661,14 @@ struct BottomSheet<Content: View>: View {
                 // Fade-out at the peek edge (Natural's "there's more below" cue). Gone once expanded.
                 LinearGradient(colors: [Color.sheet.opacity(0), Color.sheet], startPoint: .top, endPoint: .bottom)
                     .frame(height: 72)
-                    .offset(y: peek - 72)
+                    .offset(y: rest - 72)
                     .opacity(expanded || dragging || peek < 72 ? 0 : 1)
                     .allowsHitTesting(false)
             }
             .offset(y: y)
             .simultaneousGesture(dragGesture(h: h, fullH: fullH), including: expanded ? .subviews : .all)
             .animation(dragging ? nil : anim, value: y)
-            .animation(anim, value: peek)
+            .animation(anim, value: rest)
         }
         .ignoresSafeArea(.container, edges: .bottom)   // sit on the screen edge, but still rise above the keyboard
     }
