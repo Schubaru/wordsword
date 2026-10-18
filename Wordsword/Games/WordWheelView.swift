@@ -161,10 +161,15 @@ struct WordWheelView: View {
                 .buttonStyle(CTAStyle())
                 .padding(.top, 8)
         }
-        .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 44)
+        .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 16)
         .frame(maxWidth: .infinity)
-        .sheetSurface(corners: [.topLeft, .topRight])
-        .ignoresSafeArea(edges: .bottom)
+        // The content stays above the home indicator; the sheet itself runs on to the screen's edge.
+        // `ignoresSafeArea` on the content's own frame does nothing (it's sized by its content), so
+        // the surface is a background, which is free to grow into the safe area it touches.
+        .background {
+            Color.clear.sheetSurface(corners: [.topLeft, .topRight])
+                .ignoresSafeArea(edges: .bottom)
+        }
         .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
         .accessibilityAddTraits(.isModal)
     }
