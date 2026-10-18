@@ -48,6 +48,8 @@ struct HomeView: View {
     /// content being nudged onto them: the paper moves by up to a line and nobody sees it, whereas
     /// moving the writing would show.
     @State private var gridTop: CGFloat = 0
+    /// The day the word of the day was last written onto the page (see `writeWordOfTheDay`).
+    @AppStorage("wotd.writtenOn") private var wotdWrittenOn = ""
     private var sheetPeek: CGFloat { trail.count > 1 ? rowsPeek + chainLine : rowsPeek }
 
     /// 0 → typing, 1 → mic committed. Everything that recedes for voice reads this directly, so the
@@ -74,16 +76,13 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     header.opacity(1 - 0.85 * toVoice)
                     paperContent
-                        .background(GeometryReader { g in
-                            Color.clear.preference(key: GridTop.self, value: g.frame(in: .global).minY)
-                        })
+                        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { gridTop = $0 }
                         .padding(.top, 16)
                         .opacity(fadeOut(toVoice))
                         .allowsHitTesting(toVoice == 0)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 20)
-                .onPreferenceChange(GridTop.self) { gridTop = $0 }
 
                 // The sheet holds the search: the field is pinned under the grabber and the list
                 // scrolls beneath it. It rides above the keyboard on its own (the container shrinks),
@@ -130,8 +129,9 @@ struct HomeView: View {
             if p.isEmpty {
                 if swingOnReturn {
                     swingOnReturn = false
-                    // Wait out the pop so the swing lands on a page that's already there.
-                    if !reduceMotion { Task { try? await Task.sleep(for: .milliseconds(320)); swing += 1 } }
+                    // Wait out the pop so the swing lands on a page that's already there. Not when
+                    // the word of the day is about to be written: that swing is his.
+                    if !reduceMotion, wotdWritten { Task { try? await Task.sleep(for: .milliseconds(320)); swing += 1 } }
                 }
                 input = ""; alternates = []; clearHint()
                 withAnimation(reduceMotion ? nil : Motion.state) { trail = LastSearch.chain }
@@ -145,11 +145,15 @@ struct HomeView: View {
         // the keyboard mid-list must not snap the list away from under the finger; the handle is
         // how the sheet goes down.
         .onChange(of: focused) { _, f in if f { withAnimation(reduceMotion ? nil : Motion.sheet) { expanded = true } } }
+        .onChange(of: expanded) { _, e in if !e { writeWordOfTheDay() } }
         .onChange(of: input) { _, v in
             if !alternates.isEmpty, v != voiceText { withAnimation(Motion.state) { alternates = [] } }
         }
         // A call, or the app going away mid-listen: drop the mic, navigate nowhere.
-        .onChange(of: scenePhase) { _, p in if p != .active { voice.abort() } }
+        // Back after midnight with the paper in view: today's word gets written now.
+        .onChange(of: scenePhase) { _, p in
+            if p != .active { voice.abort() } else if !expanded { writeWordOfTheDay() }
+        }
         .onDisappear { voice.abort() }
         // The keyboard leaves only when the mic actually commits.
         .onChange(of: voice.live) { _, live in if live { focused = false } }
@@ -186,9 +190,13 @@ struct HomeView: View {
     // MARK: the paper — what's written on the page under the header
     /// The search moved into the sheet, so the page is free: the word of the day today; the games
     /// entry (word-wheel session) is added here next. Rows go on the grid with `.onRule(_:spacing: rule)`.
-    @ViewBuilder private var paperContent: some View {
-        wordOfTheDay
-        GamesEntry(rule: rule)
+    /// One block, not a group: the padding and the grid probe hung on it must land on the whole
+    /// column, or each row gets its own padding and the rules phase to the last one.
+    private var paperContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            wordOfTheDay
+            GamesEntry(rule: rule)
+        }
     }
 
     // MARK: the search — pinned at the top of the sheet. The whole point of the home page.
@@ -242,42 +250,35 @@ struct HomeView: View {
         .animation(reduceMotion ? nil : Motion.state, value: input.isEmpty)
     }
 
-    /// Word of the day: a suggestion, not a task, so it stays at footnote weight. The wash is what gives it an edge on a page with no other
-    /// fills — a scrap laid on the paper, resting on a rule — and it's `pen` at 10%, so it's grey on
-    /// white and grey on black instead of a colour that only works in one of them. Still no arrow and
-    /// no solid fill: those belong to actions.
+    /// Word of the day, written on the paper (`WordOfTheDayEntry`). The meaning comes from your
+    /// library when you've looked the word up before, so a known word never costs a fetch.
     private var wordOfTheDay: some View {
-        Button { router.path.append(.define(WordOfTheDay.today)) } label: {
-            // Side by side while it fits; stacked once the text size says it doesn't.
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: 7) { wotdLabel; wotdWord }
-                VStack(alignment: .leading, spacing: 3) { wotdLabel; wotdWord }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(Capsule().fill(Color.penWash))
-            // The chip is small; the target isn't. Two rules tall with the chip sitting on the lower
-            // one, so the 44pt grows up into blank page instead of lifting the chip off the line.
-            .frame(height: 2 * rule, alignment: .bottom)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+        let word = WordOfTheDay.today
+        return WordOfTheDayEntry(word: word,
+                                 known: words.first { $0.text.caseInsensitiveCompare(word) == .orderedSame }?.definition,
+                                 rule: rule, written: wotdWritten) {
+            router.path.append(.define(word))
         }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel("Word of the day: \(WordOfTheDay.today)")
+        .id(word)       // a new day is a new word, written fresh
     }
 
-    private var wotdLabel: some View {
-        Text("Word of the day").font(.footnote).foregroundStyle(Color.ink2)
+    /// Once a day, the first time the paper is actually in view — the sheet covers it at launch, so
+    /// that's when it goes down, not on appear. The knight winds up and the word is cut onto the page
+    /// on his strike, with a tap you can feel. Every other visit it's already written. Reduce Motion
+    /// has no swing and no cut, so there the word is simply always written.
+    private func writeWordOfTheDay() {
+        guard !wotdWritten else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(260))      // let the sheet clear the line first
+            swing += 1
+            try? await Task.sleep(for: .milliseconds(200))      // the wind-up; the word lands on the strike
+            pulse(.impact(flexibility: .rigid, intensity: 0.7))
+            wotdWrittenOn = Self.today
+        }
     }
 
-    private var wotdWord: some View {
-        Text(WordOfTheDay.today)
-            .font(.system(.footnote, design: .rounded).weight(.semibold))
-            .foregroundStyle(Color.ink)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(Color.ink2).frame(height: 1).offset(y: 3)
-            }
-    }
+    private static var today: String { Date.now.formatted(.iso8601.year().month().day()) }
+    private var wotdWritten: Bool { reduceMotion || wotdWrittenOn == Self.today }
 
     /// The system search bar's type: body, regular. A long phrase scrolls inside the field.
     private let inputFont = Font.body
@@ -563,12 +564,6 @@ struct HomeView: View {
         .buttonStyle(.plain)
         .accessibilityHint("Opens your full word list")
     }
-}
-
-/// Where the writing block starts on screen, so the paper's rules can be phased to it.
-private struct GridTop: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 // MARK: - Bottom sheet (Natural-style): peeks at the bottom, drag up to expand, scrolls when expanded.
