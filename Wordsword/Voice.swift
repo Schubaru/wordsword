@@ -13,7 +13,7 @@ enum VoiceBlock: Equatable {
 
     var message: String {
         switch self {
-        case .needsPermission: "You're set — hold again to speak."
+        case .needsPermission: "You're set — tap the mic to speak."
         case .micOff:          "The mic is off for wordsword."
         case .speechOff:       "Speech recognition is off."
         case .unavailable:     "Voice isn't available right now."
@@ -103,7 +103,7 @@ enum VoiceText {
 
 // MARK: - The mic
 
-/// Hold-to-speak. `hold` runs 0 → 1 across the press so the whole transition can follow the finger
+/// The mic. `hold` runs 0 → 1 as it arms so the whole transition is one number every view reads,
 /// instead of snapping after a timer; the mic commits when it reaches 1.
 @MainActor @Observable final class VoiceListener {
     static let samples = 56
@@ -202,20 +202,25 @@ enum VoiceText {
         stop(); collapse()
     }
 
-    /// VoiceOver can't long-press, so it gets a hands-free listen: speak, stop when you stop.
+    /// The mic button: speak, and it stops when you stop — or when you tap the button again.
     func listenHandsFree() async -> VoiceOutcome {
+        finishing = false
         begin()
         var elapsed = 0, quiet = 0
         var last = ""
         while elapsed < 8_000 {
             try? await Task.sleep(for: .milliseconds(200))
             elapsed += 200
-            if block != nil { break }
+            if block != nil || finishing { break }
             if heard != last { last = heard; quiet = 0 } else if !heard.isEmpty { quiet += 200 }
             if quiet >= 1_400 { break }
         }
         return await end()
     }
+
+    /// The mic button tapped again mid-listen: done talking, define what's there.
+    func finish() { finishing = true }
+    private var finishing = false
 
     // MARK: engine
 

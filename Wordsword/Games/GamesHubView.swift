@@ -75,36 +75,76 @@ struct WordsFoundView: View {
     }
 }
 
-/// Home's one line about games: a pen-wash scrap written on the paper in the same hand as the word
-/// of the day — label in ink-2, the thing itself in rounded ink — two rules tall with the chip on
-/// the lower one, so the 44pt target grows up into blank page instead of lifting it off the line.
+/// Home's games: a "Games" line written on the paper — it opens the hub, where Words found lives —
+/// then one `GameCard` per game, full width, stacked. A new game is one more card here.
 struct GamesEntry: View {
     let rule: CGFloat
     @Environment(Router.self) private var router
     @State private var save = WordWheelSave.load()
 
     var body: some View {
-        Button { router.path.append(.games) } label: {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: 7) { label; detail }
-                VStack(alignment: .leading, spacing: 3) { label; detail }
+        VStack(alignment: .leading, spacing: 0) {
+            Button { router.path.append(.games) } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("Games").font(.footnote.weight(.medium))
+                    Image(systemName: "chevron.right").font(.caption2.weight(.bold))
+                }
+                .foregroundStyle(Color.ink2)
+                .onRule(2, spacing: rule)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(Capsule().fill(Color.penWash))
-            .frame(height: 2 * rule, alignment: .bottom)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .accessibilityLabel("All games")
+
+            GameCard(title: "Word Wheel", detail: "Level \(save.level)", rule: rule) {
+                WheelDoodle(color: .ink)
+            } action: {
+                router.path.append(.wordWheel)
+            }
         }
-        .buttonStyle(PressStyle())
-        .accessibilityLabel("Games: Word Wheel, level \(save.level)")
         .onAppear { save = WordWheelSave.load() }
     }
+}
 
-    private var label: some View { Text("Games").font(.footnote).foregroundStyle(Color.ink2) }
-    private var detail: some View {
-        Text("Word Wheel, level \(save.level)")
-            .font(.system(.footnote, design: .rounded).weight(.semibold))
-            .foregroundStyle(Color.ink)
+/// One game on Home: its doodle, its name, where you are in it. Every game wears this card, so
+/// "the white card with a drawing is a game" is learned once. It's a sheet lying on the paper —
+/// `sheet` fill, the 1pt `rule` edge, a soft lift — three rules tall with its bottom edge resting on
+/// a rule, so it sits on the grid the way the word of the day does.
+struct GameCard<Doodle: View>: View {
+    let title: String
+    let detail: String
+    let rule: CGFloat
+    @ViewBuilder var doodle: Doodle
+    let action: () -> Void
+    @ScaledMetric(relativeTo: .headline) private var mark: CGFloat = 48
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+        Button(action: action) {
+            HStack(spacing: 14) {
+                doodle.frame(width: mark, height: mark)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.system(.headline, design: .rounded)).foregroundStyle(Color.ink)
+                    Text(detail).font(.subheadline).foregroundStyle(Color.ink2)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Color.ink2)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, minHeight: 3 * rule - 10)
+            .background(shape.fill(Color.sheet))
+            .overlay(shape.strokeBorder(Color.rule, lineWidth: 1))
+            .contentShape(shape)
+        }
+        .buttonStyle(SurfacePressStyle(shape: shape))
+        .shadow(color: .shadow, radius: 16, y: 6)
+        // The card lies on the paper with its bottom edge on a rule; the 10pt above it is the gap
+        // under whatever was written on the line before.
+        .frame(minHeight: 3 * rule, alignment: .bottom)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title), \(detail)")
+        .accessibilityHint("Opens the game")
     }
 }

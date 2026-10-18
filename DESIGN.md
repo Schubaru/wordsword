@@ -26,7 +26,7 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 
 ## Typography (system fonts, Dynamic Type)
 
-- Search field: SF Rounded bold `.title3` — the headword's hand, one size down — placeholder in ink-2 @ 80%. (`Font.ghost`, the 38pt no-box input, is retired.)
+- Search field: system `.body` (17pt regular), the system search bar's size and weight — placeholder in ink-2 @ 80%. The headword's rounded bold belongs to the word once it's looked up, not to the field you type it into.
 - Headword & wordmark: SF Rounded, bold, `.largeTitle`.
 - Definition: New York serif (`.fontDesign(.serif)`), `.title3`. It's a book.
 - Pronunciation: SF Rounded semibold `.footnote` at ink-2 — `SANG-gwin`, quiet enough to skip.
@@ -35,7 +35,7 @@ Strategy: Restrained, monochrome. Pen ≤10% of surface. The paper rules and mar
 
 ## Layout (Natural-AI patterns, wordsword content)
 
-- **Home:** the knight (`KnightMark`, 44pt, VoiceOver "wordsword") + 2 glass icon buttons — he swings once when you come back from a word you typed or said (not a tapped one; skipped under Reduce Motion); the paper under him is the page's free space — Word of the day is a `pen-wash` capsule resting on a rule — a scrap laid on the page, not a card and not an action — and the games entry sits under it (`paperContent` in `HomeView.swift`). Below, a draggable **bottom sheet** that *is* the search. The **search field is pinned at the top of the sheet** (rounded bold type, `sheet` fill, the 1pt `rule` edge every container wears, turning `pen` while focused; magnifier in `ink-2`; no submit button — the keyboard's "go" does it), `Hold to speak` written on the sheet's first rule under it, then the recent words newest first, ending in a quiet "All N words" line. The **previous word is the first row**, no special treatment — the same row as every other word, plus a `from sanguine › optimistic` footnote when it ends a chain; tapping it resumes that chain. Home opens expanded with the field focused; focusing the field (a tap, a deep link, a voice miss) opens the sheet to just under the header, losing focus leaves it where it is — a scroll that dismissed the keyboard mid-list must not snap the list away — and the handle is how it goes down. The sheet rides above the keyboard by itself (its container shrinks with it), so nothing is choreographed out of the keyboard's way any more.
+- **Home:** the knight (`KnightMark`, 44pt, VoiceOver "wordsword") + 2 glass icon buttons — he swings once when you come back from a word you typed or said (not a tapped one; skipped under Reduce Motion); the paper under him is the page's free space — Word of the day is a `pen-wash` capsule resting on a rule — a scrap laid on the page, not a card and not an action — and the games sit under it: a `Games ›` line (opens the hub) and one `GameCard` per game (`paperContent` in `HomeView.swift`). Below, a draggable **bottom sheet** that *is* the search. The **search field is pinned at the top of the sheet** (system body type, 44pt tall, `sheet` fill, the 1pt `rule` edge every container wears, turning `pen` while focused; magnifier in `ink-2`; trailing is the mic while the field is empty and the clear button once it isn't, like the system search bar; no submit button — the keyboard's "go" does it), then the recent words newest first with no dividers between them — whitespace separates rows, the sheet draws no rules — ending in a quiet "All N words" line. The **previous word is the first row**, no special treatment — the same row as every other word, plus a `from sanguine › optimistic` footnote when it ends a chain; tapping it resumes that chain. Home opens expanded with the field focused; focusing the field (a tap, a deep link, a voice miss) opens the sheet to just under the header, losing focus leaves it where it is — a scroll that dismissed the keyboard mid-list must not snap the list away — and the handle is how it goes down. The sheet rides above the keyboard by itself (its container shrinks with it), so nothing is choreographed out of the keyboard's way any more.
 - **The rules are a baseline grid, not wallpaper (Home).** Every line written on the paper — the word of the day, anything else in `paperContent` — is a whole number of college rules tall with its baseline sitting on the rule that closes it, so text is written *on* the paper instead of floating over it. The rules are phased to the top of that block (measured, since the safe area differs per device) rather than the block being nudged onto them, and the rule spacing scales with Dynamic Type so the alignment survives every text size. `.onRule(_:spacing:)` in `Theme.swift` is the whole mechanism. The sheet draws no rules of its own; the one line it writes on (the hint under the search field) draws its own hairline at the footnote's baseline, measured from the font, so the descenders stay inside the row. The top-bar buttons sit above the grid — they're chrome — but the title is writing and lands on a rule (see Headers).
 - **Pronunciation:** the respelling sits on its own line directly under the headword (2pt gap — it
   belongs to the word, not to the answer, so it rides the slash in rather than fading with the
@@ -99,27 +99,26 @@ Both halves ride on requests the app already makes, so saying a word costs no ex
   (capped at 2s, so an absent network can't delay a word meant to open instantly and offline) and
   as each flashcard comes up.
 
-## Voice — hold to speak (`Voice.swift`)
+## Voice — the mic in the search field (`Voice.swift`)
 
-The search field does double duty: **tap to type, hold to speak**. `Hold to speak` sits under the
-field as its description line, and the hold target is an invisible catcher over the field + that line
-(a long press on a live `UITextField` belongs to the loupe and paste menu; the catcher is only
-hit-testable while the field is empty, so typing keeps every gesture it had). The field lives on a
-draggable sheet, so a finger that travels more than 12pt is dragging, not holding: the hold is dropped
-silently and the release neither speaks nor raises the keyboard.
+**Tap the mic to speak.** It sits at the trailing end of the empty field, where the system search bar
+keeps its dictation mic. Tap it and it listens hands-free (`listenHandsFree`) until you stop talking
+(1.4s of quiet after the first word) or tap it again (`finish()`); it gives up after 8s. While it
+listens the glyph is `mic.fill` in `pen` — pen marks the live thing — and its label reads "Stop
+listening". (Hold-to-speak and its `Hold to speak` line are retired: a hidden gesture needed a
+caption to be found, and the caption cost the sheet a row.)
 
-- **The transition is one number.** `VoiceListener.hold` runs 0 → 1 across the press and *everything*
-  reads it directly — header fade, the list under the field receding, placeholder crossfade, the rule
-  drawing in. So the
-  change tracks the finger instead of snapping when a timer fires, and a hold released early rewinds
-  from wherever it got to. The mic commits at `hold == 1` (600ms), with the engine starting at 200ms
-  so no first syllable is clipped.
-- **The signature move: the ruled line listens.** The hairline under the field is redrawn in `pen` as
+- **The transition is one number.** `VoiceListener.hold` runs 0 → 1 over 600ms and *everything*
+  reads it directly — header fade, the list under the field receding, placeholder crossfade, the
+  line drawing in. The mic commits at `hold == 1`, with the engine starting at 200ms so no first
+  syllable is clipped.
+- **The signature move: a line that listens.** Under the field, a line is drawn in `pen` as
   `ListeningRule` — a polyline over the last 56 mic samples, tapered at both ends. Silence is a
-  dead-flat line, i.e. the same rule that was already there; speaking is the page coming alive. Same
-  `.doodle()` stroke as every other hand-drawn mark. No mic glyph, no pulsing badge, no new metaphor.
-- **Ink marks certainty.** The live hypothesis renders in the ghost type at `ink-2`; it firms to `ink`
-  the moment the recogniser calls the transcript final.
+  dead-flat line; speaking is the page coming alive. Same `.doodle()` stroke as every other
+  hand-drawn mark. Under it, `Listening — tap the mic when you're done`, so motion is never the only
+  signal. At rest the row isn't there at all.
+- **Ink marks certainty.** The live hypothesis renders in the field's type at `ink-2`; it firms to
+  `ink` the moment the recogniser calls the transcript final.
 - Placeholder crossfades `type a word` → `say a word` so the line never blinks empty. Header and the
   paper drop to 15%, the list under the field fades out — voice gets the field and its line.
 
@@ -128,10 +127,10 @@ the input with the keyboard up and the candidates offered as `.primary` chips un
 *"Not sure I caught that. Did you mean:"* — the same words and the same chips as the chat's
 did-you-mean, so a mishearing and a misspelling resolve identically.
 
-**Edge cases** all land in the caption row, in place of `Hold to speak`, for a few seconds: nothing
+**Edge cases** all land in a caption row under the field, for a few seconds: nothing
 heard, permissions not yet asked, mic or speech recognition off (with `Open Settings` beside it,
-stacking below via `ViewThatFits` at accessibility text sizes), recogniser unavailable. Released
-before the mic commits = it was a tap, so the keyboard comes up and nothing else happens. A call or
+stacking below via `ViewThatFits` at accessibility text sizes), recogniser unavailable. Stopped
+before the mic commits = nothing heard yet, so the keyboard comes up and nothing else happens. A call or
 a backgrounded app aborts the mic and navigates nowhere. A misheard-but-plausible word still routes
 to `DefineView`, whose did-you-mean already handles it.
 
@@ -169,8 +168,14 @@ until you stop talking.
 
 ## Games (`Games/`)
 
-Games are a pushed area, entered from one pen-wash scrap on the Home paper under the word of the day
-(`GamesEntry`, written on the same two-rule grid). `GamesHubView` lists each game as a grouped row,
+Games live on the Home paper under the word of the day (`GamesEntry`): a `Games ›` line written on a
+rule, which opens the hub, then **one `GameCard` per game**, full width, stacked. Every game wears the
+same card — its own doodle (48pt, scaled), its name in rounded `.headline`, where you are in it
+(`Level 5`) in `ink-2`, a chevron — and a tap goes straight into the game. The card is a sheet lying
+on the paper: `sheet` fill, 1pt `rule` edge, radius 20, a soft lift (radius 16, y 6), three rules
+tall with its bottom edge resting on a rule. Each game gets a doodle in `Doodles.swift` drawn in the
+knight's stroke; Word Wheel's (`WheelDoodle`) is the wheel with five letters and the pen line
+spelling a word across four of them. `GamesHubView` lists each game as a grouped row,
 plus **Words found** — every word a game has turned up, newest first, each a button into Define.
 That is the rule for every game here: *a word you find is a word you can look up.*
 

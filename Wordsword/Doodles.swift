@@ -276,3 +276,64 @@ extension View {
             }
     }
 }
+
+// MARK: - Game doodles: one per game, for its card on Home
+/// Word Wheel: the wheel, five letters on it, and the pen line spelling a four-letter word across them —
+/// the game's one move, drawn. Connected letters are filled, like the current token.
+struct WheelDoodle: View {
+    var color: Color = .primary
+
+    var body: some View {
+        GeometryReader { g in
+            let s = min(g.size.width, g.size.height)
+            let w = max(1.4, s * 0.045)
+            ZStack {
+                WheelRim().doodle(color, width: w)
+                WheelLetters(only: [3]).doodle(color, width: w * 0.8)
+                WheelLetters(only: WheelSwipe.path).fill(color)
+                WheelSwipe().doodle(color, width: w * 1.3)
+            }
+            .frame(width: s, height: s)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Where the five letters sit, inside the rim like the real wheel's. Slot 0 is at the top, clockwise.
+private func wheelSlot(_ r: CGRect, _ k: Int) -> CGPoint {
+    let a = -CGFloat.pi / 2 + 2 * .pi * CGFloat(k) / 5
+    return P(r, 0.5 + 0.27 * cos(a), 0.52 + 0.27 * sin(a))
+}
+
+/// A circle drawn in one go that overshoots its start a little, the way a pen circle does.
+private struct WheelRim: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.addArc(center: P(r, 0.5, 0.52), radius: 0.43 * min(r.width, r.height),
+                 startAngle: .degrees(-70), endAngle: .degrees(302), clockwise: false)
+        return p
+    }
+}
+
+private struct WheelLetters: Shape {
+    var only: [Int]
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let d = 0.13 * min(r.width, r.height)
+        for k in only {
+            let c = wheelSlot(r, k)
+            p.addEllipse(in: CGRect(x: c.x - d / 2, y: c.y - d / 2, width: d, height: d))
+        }
+        return p
+    }
+}
+
+private struct WheelSwipe: Shape {
+    static let path = [4, 0, 1, 2]
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.addLines(Self.path.map { wheelSlot(r, $0) })
+        return p
+    }
+}

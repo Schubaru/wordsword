@@ -280,7 +280,8 @@ struct SurfacePressStyle<S: Shape>: ButtonStyle {
     var shape: S
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background { shape.fill(Color.ink.opacity(configuration.isPressed ? 0.06 : 0)) }
+            // On top, not behind: a card has its own opaque fill, which would hide a wash underneath.
+            .overlay { shape.fill(Color.ink.opacity(configuration.isPressed ? 0.06 : 0)).allowsHitTesting(false) }
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(Motion.feedback, value: configuration.isPressed)
     }

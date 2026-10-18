@@ -8,7 +8,7 @@ private let sheetGrabber: CGFloat = 27
 /// Home = a sheet of ruled paper (the word of the day, and whatever else gets written on the page)
 /// with a sheet you can pull up from the bottom. The sheet is where words are looked up: a search
 /// field pinned at its top, your recent words under it. Natural-AI layout, wordsword content.
-/// The search field does double duty: tap it to type, hold it to speak (see `Voice.swift`).
+/// The mic in the search field listens for a spoken word instead (see `Voice.swift`).
 struct HomeView: View {
     @Environment(Router.self) private var router
     @Environment(\.modelContext) private var context
@@ -24,8 +24,6 @@ struct HomeView: View {
     @State private var hintOffersSettings = false
     @State private var alternates: [String] = []
     @State private var voiceText = ""          // what the mic put in the field; edits past this drop the chips
-    @State private var pressing = false
-    @State private var dragged = false         // the finger left the field: it's dragging the sheet, not holding
     @State private var hintTask: Task<Void, Never>?
     @State private var beat = 0
     @State private var beatKind = SensoryFeedback.warning
@@ -50,8 +48,6 @@ struct HomeView: View {
     /// content being nudged onto them: the paper moves by up to a line and nobody sees it, whereas
     /// moving the writing would show.
     @State private var gridTop: CGFloat = 0
-    /// The sheet writes at a smaller rule than the page: the line under the search field is one of these.
-    @ScaledMetric(relativeTo: .body) private var sheetRule: CGFloat = 22
     private var sheetPeek: CGFloat { trail.count > 1 ? rowsPeek + chainLine : rowsPeek }
 
     /// 0 → typing, 1 → mic committed. Everything that recedes for voice reads this directly, so the
@@ -152,11 +148,10 @@ struct HomeView: View {
         .onChange(of: input) { _, v in
             if !alternates.isEmpty, v != voiceText { withAnimation(Motion.state) { alternates = [] } }
         }
-        // A call, or the app going away mid-hold: drop the mic, navigate nowhere.
-        .onChange(of: scenePhase) { _, p in if p != .active { pressing = false; voice.abort() } }
+        // A call, or the app going away mid-listen: drop the mic, navigate nowhere.
+        .onChange(of: scenePhase) { _, p in if p != .active { voice.abort() } }
         .onDisappear { voice.abort() }
-        // The keyboard stays up through the whole arm: a press that turns out to be a tap must not
-        // cost the user their keyboard. It leaves only when the mic actually commits.
+        // The keyboard leaves only when the mic actually commits.
         .onChange(of: voice.live) { _, live in if live { focused = false } }
         .sensoryFeedback(trigger: voice.live) { _, live in live ? .impact(flexibility: .soft) : nil }
         .sensoryFeedback(trigger: beat) { _, _ in beatKind }
@@ -197,49 +192,49 @@ struct HomeView: View {
     }
 
     // MARK: the search — pinned at the top of the sheet. The whole point of the home page.
-    /// The field, then the line under it. Spacing 0: the caption already reserves a row for
-    /// "Listening — release to define", so nothing inherits a gap on top of that reserved space.
+    /// The field, then whatever it has to say: the listening line, a voice hint, did-you-mean.
+    /// At rest that's nothing — the recent words start right under the field.
     private var searchBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 0) {
-                searchField
-                caption
-            }
-            .overlay { holdCatcher }
+            searchField
+            caption
             if !alternates.isEmpty { didYouMean.padding(.top, 10).padding(.bottom, 6) }
         }
         .padding(.horizontal, 20)
         .padding(.top, 2)
     }
 
-    /// A search field in the app's own hand: rounded bold type, `sheet` fill with the 1pt `rule` edge
-    /// every container wears, and the edge turns `pen` while the field has focus — pen marks focus,
-    /// nothing else does. No submit button: the keyboard's "go" already does it.
+    /// A search field at the system's size: body type, `sheet` fill with the 1pt `rule` edge every
+    /// container wears, and the edge turns `pen` while the field has focus — pen marks focus,
+    /// nothing else does. No submit button: the keyboard's "go" already does it. Trailing is the mic
+    /// while the field is empty and the clear button once it isn't, like the system search bar.
     private var searchField: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(.body.weight(.semibold)).foregroundStyle(Color.ink2)
+                .font(.body).foregroundStyle(Color.ink2)
                 .accessibilityHidden(true)
             inputLine
-            if !input.isEmpty {
+            if input.isEmpty {
+                micButton.transition(.opacity)
+            } else {
                 Button {
                     input = ""; alternates = []
                 } label: {
                     Image(systemName: "xmark.circle.fill").font(.body).foregroundStyle(Color.ink2)
-                        .frame(width: 32, height: 44)
+                        .frame(width: 36, height: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear")
                 .transition(.opacity)
             }
         }
-        .padding(.leading, 14)
-        .padding(.trailing, input.isEmpty ? 14 : 6)
-        .frame(minHeight: 48)
+        .padding(.leading, 12)
+        .padding(.trailing, 4)
+        .frame(minHeight: 44)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.sheet)
+            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.sheet)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(focused ? Color.pen : Color.rule, lineWidth: 1)
                 }
         }
@@ -247,8 +242,7 @@ struct HomeView: View {
         .animation(reduceMotion ? nil : Motion.state, value: input.isEmpty)
     }
 
-    /// Word of the day: a suggestion, not a task, so it stays at footnote weight and reads *after*
-    /// "Hold to speak" rather than over it. The wash is what gives it an edge on a page with no other
+    /// Word of the day: a suggestion, not a task, so it stays at footnote weight. The wash is what gives it an edge on a page with no other
     /// fills — a scrap laid on the paper, resting on a rule — and it's `pen` at 10%, so it's grey on
     /// white and grey on black instead of a colour that only works in one of them. Still no arrow and
     /// no solid fill: those belong to actions.
@@ -285,9 +279,8 @@ struct HomeView: View {
             }
     }
 
-    /// The headword's hand, one size down: the same rounded bold as the ghost input was, at a text
-    /// style so it scales. A long phrase scrolls inside the field rather than stepping down.
-    private let inputFont = Font.system(.title3, design: .rounded).weight(.bold)
+    /// The system search bar's type: body, regular. A long phrase scrolls inside the field.
+    private let inputFont = Font.body
 
     private var inputLine: some View {
         ZStack(alignment: .leading) {
@@ -306,8 +299,6 @@ struct HomeView: View {
                 .onSubmit(go)
                 .opacity(fadeOut(toVoice))
                 .accessibilityLabel("Word to define")
-                .accessibilityHint("Hold the field to speak the word instead")
-                .accessibilityAction(named: "Speak a word", speakAction)
             // What the mic has so far, in the same hand as the typed line. Grey while it's still a
             // guess, ink once the recogniser commits — the ink firming up is the "I got that" cue.
             if !voice.heard.isEmpty {
@@ -323,51 +314,53 @@ struct HomeView: View {
         .animation(reduceMotion ? nil : Motion.state, value: input.isEmpty)
     }
 
-    /// The line under the field. Idle it's the invitation, written on the sheet's first rule; held,
-    /// it's that rule waking up — so the two share a guide: the hint's baseline and the wave's centre
-    /// both sit on the same hairline, and one becomes the other in place, on the line, rather than
-    /// near it. The sheet draws no rules of its own, so this row draws the one it sits on — at the
-    /// baseline, measured from the font, so the descenders stay inside the row instead of hanging
-    /// into the next one.
-    private var caption: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Side by side while it fits; stacked once the text size says it doesn't.
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) { hintText; settingsLink }
-                VStack(alignment: .leading, spacing: 4) { hintText; settingsLink }
-            }
-            .opacity(input.isEmpty ? fadeOut(toVoice) : 0)
-            .frame(minHeight: sheetRule, alignment: .bottom)
-            .padding(.horizontal, 14)        // written inside the field's edges, like the text above it
-            .frame(maxWidth: .infinity, alignment: .leading)   // the rule runs the sheet's width, like every row's
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(Color.paperRule).frame(height: 1).padding(.bottom, footnoteDescent)
-            }
-            .overlay(alignment: .bottom) {
+    /// Tap to speak; tap again when you're done (or just stop talking). Pen while it's listening —
+    /// pen marks the live thing, the same way it marks the focused field.
+    private var micButton: some View {
+        Button {
+            if toVoice > 0 { voice.finish() } else { listen() }
+        } label: {
+            Image(systemName: toVoice > 0 ? "mic.fill" : "mic")
+                .font(.body).foregroundStyle(toVoice > 0 ? Color.pen : Color.ink2)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 36, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(toVoice > 0 ? "Stop listening" : "Speak a word")
+    }
+
+    /// What the field has to say, under it. Listening, it's the pen line that moves with your voice
+    /// plus a caption that says so — motion is never the only signal the mic is live. A voice miss or
+    /// a blocked mic puts its hint here for a few seconds. At rest it's nothing at all.
+    @ViewBuilder private var caption: some View {
+        if toVoice > 0 {
+            VStack(alignment: .leading, spacing: 4) {
                 ListeningRule(levels: voice.levels, draw: reduceMotion ? 1 : CGFloat(fadeIn(toVoice, from: 0.35)))
                     .doodle(.pen, width: 2)
                     .frame(height: 22)        // a Shape is greedy; pin it or it grows the whole row
-                    .padding(.horizontal, 14)
                     .opacity(fadeIn(toVoice, from: 0.35))
-                    .allowsHitTesting(false)
-                    .alignmentGuide(.bottom) { $0[VerticalAlignment.center] + footnoteDescent }
+                Text("Listening — tap the mic when you're done")
+                    .font(.caption).foregroundStyle(Color.ink2)
+                    .opacity(fadeIn(toVoice))
             }
-            // Motion is never the only signal that the mic is live. Idle it's a blank rule of the
-            // sheet, which is what keeps the list from moving when the mic comes up.
-            Text("Listening — release to define")
-                .font(.caption).foregroundStyle(Color.ink2)
-                .padding(.horizontal, 14)
-                .opacity(fadeIn(toVoice))
-                .frame(minHeight: sheetRule, alignment: .bottom)
-                .accessibilityHidden(toVoice == 0)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .transition(.opacity)
+        } else if let hint {
+            // Side by side while it fits; stacked once the text size says it doesn't.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) { hintText(hint); settingsLink }
+                VStack(alignment: .leading, spacing: 4) { hintText(hint); settingsLink }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .transition(.opacity)
         }
     }
 
-    /// How far the footnote's descenders reach under its baseline, at the current text size.
-    private var footnoteDescent: CGFloat { -UIFont.preferredFont(forTextStyle: .footnote).descender }
-
-    private var hintText: some View {
-        Text(hint ?? "Hold to speak").font(.footnote).foregroundStyle(Color.ink2)
+    private func hintText(_ text: String) -> some View {
+        Text(text).font(.footnote).foregroundStyle(Color.ink2)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -393,30 +386,6 @@ struct HomeView: View {
         .transition(.opacity.combined(with: .offset(y: 6)))
     }
 
-    /// Tap to type, hold to speak. It sits over the field rather than on it: a long press on a live
-    /// UITextField belongs to the loupe and the paste menu, and fighting those loses. The field now
-    /// lives on a draggable sheet, so a finger that travels is dragging, not holding: the hold is
-    /// dropped silently and the release neither speaks nor raises the keyboard.
-    private var holdCatcher: some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { v in
-                        if !pressing, !dragged { pressing = true; startHold() }
-                        if pressing, hypot(v.translation.width, v.translation.height) > 12 {
-                            pressing = false; dragged = true; voice.abort()
-                        }
-                    }
-                    .onEnded { _ in
-                        if pressing { pressing = false; endHold() }
-                        dragged = false
-                    }
-            )
-            .allowsHitTesting(input.isEmpty)   // once there's text to edit, the field gets its gestures back
-            .accessibilityHidden(true)
-    }
-
     // MARK: - keyboard
     // The sheet sits above the keyboard by itself (its container shrinks with it), so there is no
     // choreography left: focus the field, and `onChange(of: focused)` opens the sheet with it.
@@ -430,33 +399,23 @@ struct HomeView: View {
         router.path.append(.define(w))
     }
 
-    // MARK: - hold to speak
-    private func startHold() {
-        clearHint()
-        withAnimation(Motion.state) { alternates = [] }
-        voice.begin()
-    }
-
-    private func endHold() {
-        Task { await handle(await voice.end()) }
-    }
-
-    /// VoiceOver can't long-press, so it gets the same feature hands-free: it listens until you stop.
-    private func speakAction() {
+    // MARK: - voice
+    /// The mic button. Listens until you stop talking or tap it again.
+    private func listen() {
         guard toVoice == 0 else { return }
         clearHint()
-        alternates = []
+        withAnimation(Motion.state) { alternates = [] }
         focused = false
         Task {
             UIAccessibility.post(notification: .announcement, argument: "Listening")
-            await handle(await voice.listenHandsFree())
+            handle(await voice.listenHandsFree())
         }
     }
 
     private func handle(_ outcome: VoiceOutcome) {
         switch outcome {
         case .cancelled:
-            break                                           // released too fast to be a hold: it was a tap
+            break                                           // stopped before the mic came up
         case .word(let w):
             pulse(.impact(flexibility: .rigid))
             input = ""
@@ -471,7 +430,7 @@ struct HomeView: View {
             UIAccessibility.post(notification: .announcement, argument: "Heard \(text). Check it, or pick another.")
         case .nothing:
             pulse(.warning)
-            show("Didn't catch that — hold again and speak a little closer.")   // wraps to two lines on narrow screens
+            show("Didn't catch that — tap the mic and speak a little closer.")   // wraps to two lines on narrow screens
         case .blocked(let b):
             pulse(.warning)
             show(b.message, settings: b.offersSettings)
@@ -509,6 +468,7 @@ struct HomeView: View {
     @ViewBuilder private var sheetContent: some View {
         history
             .padding(.horizontal, 20)
+            .padding(.top, 4)
             .padding(.bottom, 40)
     }
 
@@ -585,12 +545,10 @@ struct HomeView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .ruled()
     }
 
     /// The list's last line, not a control sitting above it: same left edge, same rhythm, one step
-    /// quieter than a word (no `.ruled()` — the row above already drew the hairline, and this is where
-    /// the paper ends). The count is of everything, the previous word included, because "all" means all.
+    /// quieter than a word. The count is of everything, the previous word included, because "all" means all.
     private var allWords: some View {
         Button { router.path.append(.wordlist(nil)) } label: {
             HStack(spacing: 6) {
