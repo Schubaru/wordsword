@@ -240,9 +240,9 @@ struct HomeView: View {
         .padding(.trailing, 4)
         .frame(minHeight: 44)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.sheet)
+            Capsule().fill(Color.sheet)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    Capsule()
                         .strokeBorder(focused ? Color.pen : Color.rule, lineWidth: 1)
                 }
         }
