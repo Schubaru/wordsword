@@ -12,6 +12,7 @@ extension Color {
     static let pen         = dyn(0x000000, 0xFFFFFF)   // primary: black on paper, inverted in dark
     static let highlighter = dyn(0xFFE244, 0xD6B529, darkAlpha: 0.5)   // unused since the headword swipe was removed (it fought the word for legibility)
     static let rule        = dyn(0xDADEE5, 0x1C1F24)   // hairline dividers
+    static let edge        = dyn(0xC3C8D1, 0x343B48)   // the outline on grouped-list sections: white-on-white needs a real edge
     static let paperRule   = dyn(0xE4E7EC, 0x1B2536)   // college-rule lines (decorative, under everything)
     static let margin      = dyn(0xF0837A, 0x6E3A38)   // the red margin line
     static let penWash: Color = .pen.opacity(0.10)
@@ -178,51 +179,42 @@ struct Wordmark: View {
 // MARK: - Grouped-list containers
 /// Where a row sits in its section. The section outline is drawn one row at a time — verticals on
 /// every row, the rounded cap only on the ends — so a group of rows reads as one sheet with an
-/// edge instead of white-on-white. Row boundaries keep the system's inset separator.
+/// edge instead of white-on-white. No dividers between rows: whitespace separates them, as on Home.
+/// Lists using these rows are `.grouped`, not `.insetGrouped`: the inset style clips every section
+/// to its rounded shape, which would cut the shadow off, so the card is drawn here instead.
 enum SheetRowEdge {
     case only, first, middle, last
     static func at(_ i: Int, of n: Int) -> SheetRowEdge { n <= 1 ? .only : i == 0 ? .first : i == n - 1 ? .last : .middle }
 }
 
-private struct SheetRowOutline: Shape {
-    let edge: SheetRowEdge
-    let radius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let b = rect.insetBy(dx: 0.5, dy: 0)          // hairline sits fully inside the row
-        let top = edge == .only || edge == .first
-        let bottom = edge == .only || edge == .last
-        let yT = top ? b.minY + 0.5 : b.minY
-        let yB = bottom ? b.maxY - 0.5 : b.maxY
-        var p = Path()
-        p.move(to: CGPoint(x: b.minX, y: top ? yT + radius : yT))
-        p.addLine(to: CGPoint(x: b.minX, y: bottom ? yB - radius : yB))
-        if bottom {
-            p.addQuadCurve(to: CGPoint(x: b.minX + radius, y: yB), control: CGPoint(x: b.minX, y: yB))
-            p.addLine(to: CGPoint(x: b.maxX - radius, y: yB))
-            p.addQuadCurve(to: CGPoint(x: b.maxX, y: yB - radius), control: CGPoint(x: b.maxX, y: yB))
-        } else {
-            p.move(to: CGPoint(x: b.maxX, y: yB))
-        }
-        p.addLine(to: CGPoint(x: b.maxX, y: top ? yT + radius : yT))
-        if top {
-            p.addQuadCurve(to: CGPoint(x: b.maxX - radius, y: yT), control: CGPoint(x: b.maxX, y: yT))
-            p.addLine(to: CGPoint(x: b.minX + radius, y: yT))
-            p.addQuadCurve(to: CGPoint(x: b.minX, y: yT + radius), control: CGPoint(x: b.minX, y: yT))
-        }
-        return p
-    }
-}
-
 extension SheetRowEdge {
-    fileprivate static let radius: CGFloat = 10   // UIKit's inset-grouped corner radius
-    /// Row content inset. Set explicitly on every row so tappable rows (which zero their list
-    /// insets to let the press wash reach the row edges) stay aligned with plain ones.
-    static let insets = EdgeInsets(top: 11, leading: 20, bottom: 11, trailing: 20)
+    /// Matches iOS 26's inset-grouped section corner, so these cards sit beside system ones.
+    fileprivate static let radius: CGFloat = 26
+    /// Gap between the screen edge and the card. Matches the list's own margin, so section
+    /// headers and footers line up with the card edge before `.sheetSectionLabel()` nudges them in.
+    fileprivate static let cardInset: CGFloat = 16
+    /// Text inset inside the card.
+    fileprivate static let inner: CGFloat = 20
+
+    fileprivate var closesTop: Bool { self == .only || self == .first }
+    fileprivate var closesBottom: Bool { self == .only || self == .last }
+
+    /// Space inside the row but outside the card. List cells clip to their bounds, so the shadow
+    /// has to fall inside the first and last rows; this is its room.
+    fileprivate var room: EdgeInsets {
+        EdgeInsets(top: closesTop ? 10 : 0, leading: Self.cardInset, bottom: closesBottom ? 16 : 0, trailing: Self.cardInset)
+    }
+
+    /// Row content inset: the shadow's room plus the padding inside the card. Set explicitly on
+    /// every row so tappable rows (which zero their list insets to let the press wash reach the
+    /// card edges) stay aligned with plain ones.
+    fileprivate var insets: EdgeInsets {
+        EdgeInsets(top: room.top + 11, leading: room.leading + Self.inner,
+                   bottom: room.bottom + 11, trailing: room.trailing + Self.inner)
+    }
 
     fileprivate var shape: UnevenRoundedRectangle {
-        let top = self == .only || self == .first
-        let bottom = self == .only || self == .last
+        let top = closesTop, bottom = closesBottom
         return UnevenRoundedRectangle(cornerRadii: .init(
             topLeading: top ? Self.radius : 0, bottomLeading: bottom ? Self.radius : 0,
             bottomTrailing: bottom ? Self.radius : 0, topTrailing: top ? Self.radius : 0), style: .continuous)
@@ -232,9 +224,23 @@ extension SheetRowEdge {
 private struct SheetRowSurface: View {
     let edge: SheetRowEdge
     var body: some View {
-        edge.shape
-            .fill(Color.sheet)
-            .overlay { SheetRowOutline(edge: edge, radius: SheetRowEdge.radius).stroke(Color.rule, lineWidth: 1) }
+        ZStack {
+            // The shadow and the outline are both cast by the card shape continued past any side
+            // that runs into a neighbouring row and clipped back to the row there — so a section
+            // reads as one card with one unbroken edge and one shadow.
+            edge.shape.fill(Color.sheet)
+                .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
+                .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                .padding(.top, edge.closesTop ? 0 : -40).padding(.bottom, edge.closesBottom ? 0 : -40)
+            edge.shape.fill(Color.sheet)
+                .overlay {
+                    edge.shape.strokeBorder(Color.edge, lineWidth: 1)
+                        .padding(.top, edge.closesTop ? 0 : -2)
+                        .padding(.bottom, edge.closesBottom ? 0 : -2)
+                }
+        }
+        .padding(edge.room)
+        .clipped()
     }
 }
 
@@ -245,10 +251,13 @@ struct SheetRowButtonStyle: ButtonStyle {
     let edge: SheetRowEdge
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .padding(SheetRowEdge.insets)
+            .padding(edge.insets)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .contentShape(Rectangle())
-            .background { edge.shape.fill(Color.ink.opacity(configuration.isPressed ? 0.05 : 0)) }
+            .background {
+                edge.shape.fill(Color.ink.opacity(configuration.isPressed ? 0.05 : 0))
+                    .padding(edge.room)
+            }
             .animation(Motion.feedback, value: configuration.isPressed)
     }
 }
@@ -257,17 +266,20 @@ extension View {
     /// A grouped-list row that reads as a sheet lying on the paper: white fill, hairline edge.
     /// Pass where the row sits in its section so the outline closes at the ends.
     func sheetRow(_ edge: SheetRowEdge = .only) -> some View {
-        listRowBackground(SheetRowSurface(edge: edge)).listRowInsets(SheetRowEdge.insets)
+        listRowBackground(SheetRowSurface(edge: edge)).listRowInsets(edge.insets)
+            .listRowSeparator(.hidden).listSectionSeparator(.hidden)
     }
 
-    /// The same row, tappable: the button label fills the row so its press wash does too, and the
-    /// separator keeps the system's text-aligned inset.
+    /// The same row, tappable: the button label fills the row so its press wash does too.
     func sheetRowButton(_ edge: SheetRowEdge = .only) -> some View {
         buttonStyle(SheetRowButtonStyle(edge: edge))
             .listRowInsets(EdgeInsets())
             .listRowBackground(SheetRowSurface(edge: edge))
-            .alignmentGuide(.listRowSeparatorLeading) { _ in SheetRowEdge.insets.leading }
+            .listRowSeparator(.hidden).listSectionSeparator(.hidden)
     }
+
+    /// A section header or footer over these cards: lined up with the text inside them.
+    func sheetSectionLabel() -> some View { padding(.horizontal, SheetRowEdge.inner) }
 
     /// The same, for rows generated by a `ForEach`.
     func sheetRow(_ i: Int, of n: Int) -> some View { sheetRow(.at(i, of: n)) }

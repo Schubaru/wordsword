@@ -17,8 +17,8 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var auth = auth
         // Rows sit on white sheets over the paper: every row carries `.sheetRow(_:)` with its place
-        // in the section, so the section's hairline outline closes at the top and bottom rows.
-        Form {
+        // in the section, so the section's outline and shadow close at the top and bottom rows.
+        List {
             Section {
                 if auth.isSignedIn {
                     // Labelled, not a bare box: a prefilled placeholder-only field leaves no
@@ -52,13 +52,14 @@ struct SettingsView: View {
                     .sheetRowButton(.only)
                 }
             } header: {
-                Text("You")
+                Text("You").sheetSectionLabel()
             } footer: {
                 Text(auth.isSignedIn
                      // Covers both buttons above it. Saying only "signing out" while a red
                      // Delete account sits alongside invites the reader to assume the opposite.
                      ? "Signing out or deleting your account keeps every word on this phone."
                      : "No account yet — your words are saved on this phone. An account adds flashcards, and backup once sync ships.")
+                .sheetSectionLabel()
             }
             Section {
                 LabeledContent("Words saved", value: "\(words.count)").sheetRow(.first)
@@ -75,14 +76,18 @@ struct SettingsView: View {
                 .disabled(words.isEmpty)
                 .sheetRowButton(.last)
             }
-            Section("About") {
+            Section {
                 Text("Definitions from the Free Dictionary API (dictionaryapi.dev). Spelling help and extra synonyms from Datamuse.")
                     .font(.footnote).foregroundStyle(Color.ink2)
                     .sheetRow(.first)
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                     .sheetRow(.last)
+            } header: {
+                Text("About").sheetSectionLabel()
             }
         }
+        .listStyle(.grouped)
+        .listSectionSpacing(12)   // the cards' shadow room already adds 26pt between sections
         .scrollContentBackground(.hidden)
         .paperScreen("Settings")
         .sheet(isPresented: $showAccount) { AccountFlow { showAccount = false } }

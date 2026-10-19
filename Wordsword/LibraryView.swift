@@ -32,7 +32,7 @@ struct LibraryView: View {
                     router.path.append(.flashcards(nil))
                 }
             }
-            Section("Wordlists") {
+            Section {
                 ForEach(Array(lists.enumerated()), id: \.element.persistentModelID) { i, l in
                     row(l.name, detail: "\(l.words.count)", icon: "list.bullet",
                         edge: .at(i, of: lists.count + 1)) { router.path.append(.wordlist(l.persistentModelID)) }
@@ -49,9 +49,12 @@ struct LibraryView: View {
                     Button { withAnimation(Motion.state) { naming = true } } label: { Label("New wordlist", systemImage: "plus") }
                         .sheetRowButton(lists.isEmpty ? .only : .last)
                 }
+            } header: {
+                Text("Wordlists").sheetSectionLabel()
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.grouped)
+        .listSectionSpacing(12)   // the cards' shadow room already adds 26pt between sections
         .scrollContentBackground(.hidden)
         .paperScreen("Library")
         // Tapping "New wordlist" should leave you typing, not looking at an empty box. A field being
@@ -123,7 +126,8 @@ struct WordlistDetailView: View {
             }
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.grouped)
+        .listSectionSpacing(12)   // the cards' shadow room already adds 26pt between sections
         .scrollContentBackground(.hidden)
         .paperScreen(list?.name ?? "All words") {
             // Same glyph as Library's Flashcards row, so the icon is learned in one place.
@@ -169,9 +173,10 @@ struct AddToWordlistSheet: View {
                     .sheetRowButton(i, of: lists.count)
                 }
             } footer: {
-                Text("\"\(word.text)\" is already in All. Wordlists are your playlists.")
+                Text("\"\(word.text)\" is already in All. Wordlists are your playlists.").sheetSectionLabel()
             }
         }
+        .listStyle(.grouped)
         .scrollContentBackground(.hidden)
         // No navigation stack behind it any more: nothing pushes, and the one control commits
         // nothing — every toggle is already saved — so it just closes the sheet.
