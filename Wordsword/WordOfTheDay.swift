@@ -10,13 +10,16 @@ enum WordOfTheDay {
     /// The one-line meaning written under the word on Home: wordsword's own sentence, the same one
     /// Define would show. Fetched once per word and kept, so Home never waits on it twice.
     static func meaning(of word: String) async -> String? {
-        let key = "wotd.meaning.\(word)"
-        if let kept = UserDefaults.standard.string(forKey: key) { return kept }
+        if let kept = kept(word) { return kept }
         guard case .found(let d) = await Dictionary.lookup(word) else { return nil }
         let m = await Simplifier.simplify(d)
-        UserDefaults.standard.set(m, forKey: key)
+        UserDefaults.standard.set(m, forKey: "wotd.meaning.\(word)")
         return m
     }
+
+    /// The sentence already fetched for this word, if any. Preferred over the library's one-liner,
+    /// which is whatever Define first showed and can be a raw dictionary sense.
+    static func kept(_ word: String) -> String? { UserDefaults.standard.string(forKey: "wotd.meaning.\(word)") }
 
     static let words = [
         "ephemeral", "sanguine", "laconic", "ineffable", "mellifluous", "petrichor", "sonder", "liminal",
@@ -38,102 +41,103 @@ enum WordOfTheDay {
     ]
 }
 
-/// Word of the day, written on Home's paper the way a headword is written in a notebook: a quiet
-/// line saying what it is, the word itself in the headword's hand with the pen underline the
-/// wordmark wears, and what it means in Define's serif. No container — it's ink on the page; the
-/// cards below it are the games. Three rows of the grid: label (1 rule), word (2), meaning (2).
-///
-/// `written` false means today's word hasn't been put on the page yet. Flipping it to true writes
-/// it: the slash cuts the word in, the underline draws, the meaning comes up under it. Home flips it
-/// once a day, the first time the paper is actually in view, and swings the knight with it.
-struct WordOfTheDayEntry: View {
+/// Word of the day, as a quiet banner floating at the top of Home: the word, how it's said, what it
+/// means. A tap anywhere looks it up the way a typed word is looked up; the speaker says it; the ✕ —
+/// or a flick up — puts it away until tomorrow's word. It's a sheet lying over the page: `sheet`
+/// fill, the 1pt `rule` edge, and a two-layer shadow (a tight contact edge, a soft lift) so it reads
+/// as floating rather than printed.
+struct WordOfTheDayBanner: View {
     let word: String
     /// The library's one-liner, when this word has been looked up before — no fetch needed.
     let known: String?
-    let rule: CGFloat
-    let written: Bool
-    let action: () -> Void
+    let open: () -> Void
+    let dismiss: () -> Void
 
-    @State private var cut: CGFloat
-    @State private var ink: CGFloat
-    @State private var settled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var fetched: String?
     @State private var missing = false
+    @State private var pron: Pronunciation?
+    @State private var pronLooked = false
+    @State private var lift: CGFloat = 0
+    @State private var speaker = Speaker.shared
+    /// Room the word's line leaves for the two icons in the corner; the meaning runs full width under them.
+    @ScaledMetric(relativeTo: .body) private var iconRoom: CGFloat = 64
 
-    init(word: String, known: String?, rule: CGFloat, written: Bool, action: @escaping () -> Void) {
-        self.word = word; self.known = known; self.rule = rule; self.written = written; self.action = action
-        _cut = State(initialValue: written ? 1 : 0)
-        _ink = State(initialValue: written ? 1 : 0)
-        _settled = State(initialValue: written)
-    }
-
-    private var meaning: String? { known ?? fetched }
+    private var meaning: String? { fetched ?? WordOfTheDay.kept(word) ?? known }
+    private var respelling: String? { Pronunciation.worthShowing(pron?.respelling, for: word) }
+    private var playing: Bool { speaker.speaking == word }
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Word of the day · \(Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))")
-                    .font(.footnote).foregroundStyle(Color.ink2)
-                    .onRule(1, spacing: rule)
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(word)
-                        .font(.headword).foregroundStyle(Color.ink)
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                        .slashReveal(cut, edge: .pen)
-                        .overlay(alignment: .bottom) {
-                            DoodleStroke(progress: ink)
-                                .stroke(Color.pen, style: .init(lineWidth: 2.5, lineCap: .round))
-                                .frame(height: 8).offset(y: 3)
-                        }
-                    Spacer(minLength: 0)
-                    Text(Image(systemName: "chevron.right"))
-                        .font(.title3.weight(.semibold)).foregroundStyle(Color.ink2)
-                        .opacity(settled ? 1 : 0)
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(word)
+                    .font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(Color.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .padding(.trailing, iconRoom)
+                // The line is held while the respelling is on its way, so the banner doesn't grow
+                // under the finger; it only closes up when there's nothing worth showing.
+                if respelling != nil || !pronLooked {
+                    Text(respelling ?? " ").font(.pron).foregroundStyle(Color.ink2)
                 }
-                .onRule(2, spacing: rule)
-                meaningLine
+                Text(meaning ?? (missing ? "Tap to find out what it means." : " "))
+                    .font(.system(.subheadline, design: .serif)).foregroundStyle(Color.ink2)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(shape.fill(Color.sheet))
+            .overlay(shape.strokeBorder(Color.rule, lineWidth: 1))
+            .contentShape(shape)
+        }
+        .buttonStyle(SurfacePressStyle(shape: shape))
+        .accessibilityLabel("Word of the day: \(word)" + (respelling.map { ", pronounced \($0)" } ?? "") + (meaning.map { ". \($0)" } ?? ""))
+        .accessibilityHint("Looks it up")
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 0) {
+                icon(playing ? "speaker.wave.2.fill" : "speaker.wave.2", "Hear \(word)", tint: playing ? .pen : .ink2) {
+                    speaker.say(word, recording: pron?.audio)
+                }
+                icon("xmark", "Dismiss word of the day", tint: .ink2, action: dismiss)
+            }
+            .padding(.top, 4).padding(.trailing, 4)
+            .animation(Motion.feedback, value: playing)
+        }
+        .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
+        .shadow(color: .shadow, radius: 20, y: 8)
+        .offset(y: lift)
+        // A flick up puts it away, the way a notification goes. Down does nothing: there's nowhere to go.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12)
+                .onChanged { v in lift = min(0, v.translation.height) }
+                .onEnded { v in
+                    if v.predictedEndTranslation.height < -40 { dismiss() }
+                    else { withAnimation(reduceMotion ? nil : Motion.sheet) { lift = 0 } }
+                }
+        )
+        .task(id: word) {
+            async let p = Dictionary.pronunciation(for: word, within: 4)
+            if known == nil {
+                let m = await WordOfTheDay.meaning(of: word)
+                withAnimation(Motion.reveal) { fetched = m; missing = m == nil }
+            }
+            let got = await p
+            withAnimation(Motion.reveal) { pron = got; pronLooked = true }
+            speaker.prefetch(got?.audio)
+        }
+    }
+
+    private func icon(_ name: String, _ label: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.subheadline.weight(.semibold)).foregroundStyle(tint)
+                .frame(width: 36, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PressStyle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Word of the day: \(word)" + (meaning.map { ". \($0)" } ?? ""))
-        .accessibilityHint("Opens its definition")
-        .accessibilityAddTraits(.isButton)
-        .task(id: word) {
-            guard known == nil else { return }
-            fetched = await WordOfTheDay.meaning(of: word)
-            missing = fetched == nil
-        }
-        .onChange(of: written) { _, w in if w { write() } }
-    }
-
-    /// Two lines of Define's serif, each written on a rule: the leading is opened up until one line
-    /// is exactly one rule, and the first baseline is put on the first rule under the word. Offline,
-    /// it says what the tap will do instead — the line is never left blank.
-    private var meaningLine: some View {
-        let font = UIFont.preferredFont(forTextStyle: .callout)
-        let serif = UIFont(descriptor: font.fontDescriptor.withDesign(.serif) ?? font.fontDescriptor, size: 0)
-        return Text(meaning ?? (missing ? "Tap to find out what it means." : " "))
-            .font(.system(.callout, design: .serif)).foregroundStyle(Color.ink2)
-            .lineSpacing(max(0, rule - serif.lineHeight))
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-            // Padding, not a `.top` alignment guide: an explicit top guide leaks up to Home's
-            // top-aligned ZStack and shifts the paper out from under the writing.
-            .padding(.top, max(0, rule - serif.ascender))
-            .frame(maxWidth: .infinity, minHeight: 2 * rule, alignment: .topLeading)
-            .opacity(settled ? 1 : 0)
-            .offset(y: settled ? 0 : 6)
-            .animation(Motion.reveal, value: meaning)
-    }
-
-    /// The cut, then the pen goes under it, then the meaning comes up — Define's arrival in miniature.
-    private func write() {
-        cut = 0; ink = 0; settled = false
-        withAnimation(Motion.slash) { cut = 1 }
-        withAnimation(.easeOut(duration: 0.35).delay(0.3)) { ink = 1 }
-        withAnimation(Motion.reveal.delay(0.5)) { settled = true }
+        .accessibilityLabel(label)
     }
 }

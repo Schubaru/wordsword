@@ -75,8 +75,10 @@ struct WordsFoundView: View {
     }
 }
 
-/// Home's games: a "Games" line written on the paper — it opens the hub, where Words found lives —
-/// then one `GameCard` per game, full width, stacked. A new game is one more card here.
+/// Home's games, the first thing on the paper: a "Play with words" header written on a rule, then
+/// one `GameCard` per game, full width, stacked. A new game is one more card here. The hub
+/// (`GamesHubView`, with Words found) is hidden for now — the header is a plain label; make it a
+/// button to `.games` to bring the hub back.
 struct GamesEntry: View {
     let rule: CGFloat
     @Environment(Router.self) private var router
@@ -84,18 +86,10 @@ struct GamesEntry: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button { router.path.append(.games) } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("Games").font(.footnote.weight(.medium))
-                    Image(systemName: "chevron.right").font(.caption2.weight(.bold))
-                }
-                .foregroundStyle(Color.ink2)
+            Text("Play with words").font(.system(.title3, design: .rounded).weight(.semibold))
+                .foregroundStyle(Color.ink)
                 .onRule(2, spacing: rule)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("All games")
+                .accessibilityAddTraits(.isHeader)
 
             GameCard(title: "Word Wheel", detail: "Level \(save.level)", rule: rule) {
                 WheelDoodle(color: .ink)

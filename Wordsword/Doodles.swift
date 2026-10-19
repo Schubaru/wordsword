@@ -271,7 +271,8 @@ extension View {
             .overlay {
                 SlashEdge(progress: progress)
                     .stroke(edge, style: .init(lineWidth: 2, lineCap: .round))
-                    .opacity(progress < 1 ? Double(min(1, (1 - progress) * 3)) : 0)
+                    // No blade before the cut starts: at 0 it would sit parked at the leading edge.
+                    .opacity(progress > 0 && progress < 1 ? Double(min(1, (1 - progress) * 3)) : 0)
                     .allowsHitTesting(false)
             }
     }

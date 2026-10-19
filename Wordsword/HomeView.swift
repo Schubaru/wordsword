@@ -48,8 +48,15 @@ struct HomeView: View {
     /// content being nudged onto them: the paper moves by up to a line and nobody sees it, whereas
     /// moving the writing would show.
     @State private var gridTop: CGFloat = 0
-    /// The day the word of the day was last written onto the page (see `writeWordOfTheDay`).
-    @AppStorage("wotd.writtenOn") private var wotdWrittenOn = ""
+    /// The day the word-of-the-day banner was put away (✕, a flick up, or a tap that looked it up).
+    /// It comes back with the next day's word.
+    @AppStorage("wotd.dismissedOn") private var wotdDismissedOn = ""
+    /// Today, re-read whenever the app comes back, so a banner put away last night returns this morning.
+    @State private var day = Self.today
+    /// The banner slides in once Home is up, not on the tick it's inserted under the splash.
+    @State private var bannerIn = false
+    @State private var bannerHeight: CGFloat = 0
+    private var showBanner: Bool { bannerIn && wotdDismissedOn != day }
     private var sheetPeek: CGFloat { trail.count > 1 ? rowsPeek + chainLine : rowsPeek }
 
     /// 0 → typing, 1 → mic committed. Everything that recedes for voice reads this directly, so the
@@ -74,10 +81,14 @@ struct HomeView: View {
                     .ignoresSafeArea(.keyboard)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    header.opacity(1 - 0.85 * toVoice)
+                    // Under the banner the header is hidden, not just covered: the knight's plume
+                    // rides above his frame and would peek over the banner's edge.
+                    header.opacity(showBanner ? 0 : 1 - 0.85 * toVoice)
+                        .allowsHitTesting(!showBanner)
                     paperContent
                         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { gridTop = $0 }
-                        .padding(.top, 16)
+                        // Clear of the banner too, when it's floating over the header (52pt tall).
+                        .padding(.top, showBanner ? max(16, 8 + bannerHeight + 12 - 52) : 16)
                         .opacity(fadeOut(toVoice))
                         .allowsHitTesting(toVoice == 0)
                     Spacer(minLength: 0)
@@ -87,7 +98,10 @@ struct HomeView: View {
                 // The sheet holds the search: the field is pinned under the grabber and the list
                 // scrolls beneath it. It rides above the keyboard on its own (the container shrinks),
                 // so typing never has to push it out of the way.
-                BottomSheet(expanded: $expanded, peek: sheetPeek) {
+                // While the banner floats over the header the expanded sheet starts under it, so the
+                // search field is never covered; it rises back when the banner goes.
+                BottomSheet(expanded: $expanded, peek: sheetPeek,
+                            top: showBanner ? max(72, 8 + bannerHeight + 12) : 72) {
                     searchBlock
                 } content: {
                     sheetContent
@@ -97,6 +111,17 @@ struct HomeView: View {
                 } onGrab: {
                     // Reaching for the handle IS the request to stop typing.
                     focused = false
+                }
+
+                if showBanner {
+                    wordOfTheDay
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bannerHeight = $0 }
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+                        .opacity(fadeOut(toVoice))
+                        .allowsHitTesting(toVoice == 0)
+                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+                        .zIndex(1)
                 }
             }
             .navigationDestination(for: Route.self) { route in
@@ -123,15 +148,15 @@ struct HomeView: View {
             guard !Task.isCancelled else { return }
             router.focusInput = false      // a deep link that landed before Home existed is satisfied here
             focused = true
+            withAnimation(reduceMotion ? nil : Motion.sheet) { bannerIn = true }
         }
         .onChange(of: router.focusInput) { _, f in if f { router.focusInput = false; raiseKeyboard() } }
         .onChange(of: router.path) { _, p in
             if p.isEmpty {
                 if swingOnReturn {
                     swingOnReturn = false
-                    // Wait out the pop so the swing lands on a page that's already there. Not when
-                    // the word of the day is about to be written: that swing is his.
-                    if !reduceMotion, wotdWritten { Task { try? await Task.sleep(for: .milliseconds(320)); swing += 1 } }
+                    // Wait out the pop so the swing lands on a page that's already there.
+                    if !reduceMotion { Task { try? await Task.sleep(for: .milliseconds(320)); swing += 1 } }
                 }
                 input = ""; alternates = []; clearHint()
                 withAnimation(reduceMotion ? nil : Motion.state) { trail = LastSearch.chain }
@@ -145,14 +170,13 @@ struct HomeView: View {
         // the keyboard mid-list must not snap the list away from under the finger; the handle is
         // how the sheet goes down.
         .onChange(of: focused) { _, f in if f { withAnimation(reduceMotion ? nil : Motion.sheet) { expanded = true } } }
-        .onChange(of: expanded) { _, e in if !e { writeWordOfTheDay() } }
         .onChange(of: input) { _, v in
             if !alternates.isEmpty, v != voiceText { withAnimation(Motion.state) { alternates = [] } }
         }
         // A call, or the app going away mid-listen: drop the mic, navigate nowhere.
-        // Back after midnight with the paper in view: today's word gets written now.
+        // Back after midnight: a new day, so tomorrow's banner is today's.
         .onChange(of: scenePhase) { _, p in
-            if p != .active { voice.abort() } else if !expanded { writeWordOfTheDay() }
+            if p != .active { voice.abort() } else { withAnimation(reduceMotion ? nil : Motion.sheet) { day = Self.today } }
         }
         .onDisappear { voice.abort() }
         // The keyboard leaves only when the mic actually commits.
@@ -188,13 +212,12 @@ struct HomeView: View {
     }
 
     // MARK: the paper — what's written on the page under the header
-    /// The search moved into the sheet, so the page is free: the word of the day today; the games
-    /// entry (word-wheel session) is added here next. Rows go on the grid with `.onRule(_:spacing: rule)`.
-    /// One block, not a group: the padding and the grid probe hung on it must land on the whole
-    /// column, or each row gets its own padding and the rules phase to the last one.
+    /// The search moved into the sheet and the word of the day floats above as a banner, so the page
+    /// opens on the games. Rows go on the grid with `.onRule(_:spacing: rule)`. One block, not a
+    /// group: the padding and the grid probe hung on it must land on the whole column, or each row
+    /// gets its own padding and the rules phase to the last one.
     private var paperContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            wordOfTheDay
             GamesEntry(rule: rule)
         }
     }
@@ -250,35 +273,23 @@ struct HomeView: View {
         .animation(reduceMotion ? nil : Motion.state, value: input.isEmpty)
     }
 
-    /// Word of the day, written on the paper (`WordOfTheDayEntry`). The meaning comes from your
-    /// library when you've looked the word up before, so a known word never costs a fetch.
+    /// Word of the day, floating over the header (`WordOfTheDayBanner`). The meaning comes from your
+    /// library when you've looked the word up before, so a known word never costs a fetch. A tap is
+    /// a search like any typed word (the knight swings on the way back), and puts the banner away.
     private var wordOfTheDay: some View {
         let word = WordOfTheDay.today
-        return WordOfTheDayEntry(word: word,
-                                 known: words.first { $0.text.caseInsensitiveCompare(word) == .orderedSame }?.definition,
-                                 rule: rule, written: wotdWritten) {
+        return WordOfTheDayBanner(word: word,
+                                  known: words.first { $0.text.caseInsensitiveCompare(word) == .orderedSame }?.definition) {
+            swingOnReturn = true
             router.path.append(.define(word))
+            wotdDismissedOn = day
+        } dismiss: {
+            withAnimation(reduceMotion ? nil : Motion.sheet) { wotdDismissedOn = day }
         }
-        .id(word)       // a new day is a new word, written fresh
-    }
-
-    /// Once a day, the first time the paper is actually in view — the sheet covers it at launch, so
-    /// that's when it goes down, not on appear. The knight winds up and the word is cut onto the page
-    /// on his strike, with a tap you can feel. Every other visit it's already written. Reduce Motion
-    /// has no swing and no cut, so there the word is simply always written.
-    private func writeWordOfTheDay() {
-        guard !wotdWritten else { return }
-        Task {
-            try? await Task.sleep(for: .milliseconds(260))      // let the sheet clear the line first
-            swing += 1
-            try? await Task.sleep(for: .milliseconds(200))      // the wind-up; the word lands on the strike
-            pulse(.impact(flexibility: .rigid, intensity: 0.7))
-            wotdWrittenOn = Self.today
-        }
+        .id(word)       // a new day is a new word
     }
 
     private static var today: String { Date.now.formatted(.iso8601.year().month().day()) }
-    private var wotdWritten: Bool { reduceMotion || wotdWrittenOn == Self.today }
 
     /// The system search bar's type: body, regular. A long phrase scrolls inside the field.
     private let inputFont = Font.body
@@ -573,6 +584,8 @@ struct HomeView: View {
 struct BottomSheet<Pinned: View, Content: View>: View {
     @Binding var expanded: Bool
     var peek: CGFloat
+    /// Where the expanded sheet's top edge stops, below the top safe area: just under the header.
+    var top: CGFloat = 72
     @ViewBuilder var pinned: Pinned
     @ViewBuilder var content: Content
     /// The handle was touched — dragged or tapped. Either way the user is done with the keyboard.
@@ -586,7 +599,7 @@ struct BottomSheet<Pinned: View, Content: View>: View {
     var body: some View {
         GeometryReader { g in
             let h = g.size.height
-            let fullH = h - 72
+            let fullH = h - top
             let rest = sheetGrabber + pinnedHeight + peek         // what shows at rest
             let restY = expanded ? h - fullH : h - rest           // top edge of the sheet
             let y = clamp(restY + drag, lower: h - fullH - 24, upper: max(h - 56, restY))
