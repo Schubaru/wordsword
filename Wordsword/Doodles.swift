@@ -338,3 +338,65 @@ private struct WheelSwipe: Shape {
         return p
     }
 }
+
+/// Linking words: four word-tiles in a square, the pen linking them in one stroke, and the first
+/// highlighter already across the top pair — a group found. The accent is the only colour a game
+/// doodle carries, and it's the game's own.
+struct LinkDoodle: View {
+    var color: Color = .primary
+    var highlighter: Color = .yellow
+
+    var body: some View {
+        GeometryReader { g in
+            let s = min(g.size.width, g.size.height)
+            let w = max(1.4, s * 0.045)
+            ZStack {
+                LinkSwipe().stroke(highlighter, style: .init(lineWidth: s * 0.17, lineCap: .round))
+                LinkTiles().doodle(color, width: w * 0.7)
+                LinkPath().doodle(color, width: w * 1.1)
+            }
+            .frame(width: s, height: s)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The four tiles: a 2×2 of little sheets.
+private struct LinkTiles: Shape {
+    static let slots: [CGPoint] = [CGPoint(x: 0.28, y: 0.30), CGPoint(x: 0.72, y: 0.30),
+                                   CGPoint(x: 0.28, y: 0.72), CGPoint(x: 0.72, y: 0.72)]
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let s = min(r.width, r.height)
+        for c in Self.slots {
+            let k = P(r, c.x, c.y)
+            p.addRoundedRect(in: CGRect(x: k.x - 0.16 * s, y: k.y - 0.13 * s, width: 0.32 * s, height: 0.26 * s),
+                             cornerSize: CGSize(width: 0.05 * s, height: 0.05 * s))
+        }
+        return p
+    }
+}
+
+/// One pen stroke through all four, the way you'd link them on paper: across, down, across.
+private struct LinkPath: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let c = LinkTiles.slots
+        p.move(to: P(r, c[0].x - 0.06, c[0].y))
+        p.addLine(to: P(r, c[1].x + 0.04, c[1].y - 0.02))
+        p.addQuadCurve(to: P(r, c[2].x - 0.04, c[2].y + 0.02), control: P(r, 0.5, 0.52))
+        p.addLine(to: P(r, c[3].x + 0.06, c[3].y))
+        return p
+    }
+}
+
+/// A short highlighter swipe behind the top pair — slightly rising, the way a quick swipe does.
+private struct LinkSwipe: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: P(r, 0.10, 0.32))
+        p.addQuadCurve(to: P(r, 0.90, 0.29), control: P(r, 0.5, 0.33))
+        return p
+    }
+}

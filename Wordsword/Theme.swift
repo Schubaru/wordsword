@@ -10,7 +10,12 @@ extension Color {
     static let ink         = dyn(0x151B24, 0xE9EBEF)
     static let ink2        = dyn(0x575E69, 0xA1A5AB)
     static let pen         = dyn(0x000000, 0xFFFFFF)   // primary: black on paper, inverted in dark
-    static let highlighter = dyn(0xFFE244, 0xD6B529, darkAlpha: 0.5)   // unused since the headword swipe was removed (it fought the word for legibility)
+    static let highlighter = dyn(0xFFE244, 0xD6B529, darkAlpha: 0.5)   // yellow: the first of the four highlighters — Linking words' easiest group
+    /// The rest of the pencil case. Only ever marks a solved group in Linking words; in dark mode each
+    /// sits at half strength over `sheet` so `ink` on it stays past 4.5:1.
+    static let highlighterGreen = dyn(0xB7F0A2, 0x6FB04A, darkAlpha: 0.5)
+    static let highlighterBlue  = dyn(0xA6DCFF, 0x4A9BE0, darkAlpha: 0.5)
+    static let highlighterPink  = dyn(0xFFB7DC, 0xD05C9A, darkAlpha: 0.5)
     static let rule        = dyn(0xDADEE5, 0x1C1F24)   // hairline dividers
     static let edge        = dyn(0xC3C8D1, 0x343B48)   // the outline on grouped-list sections: white-on-white needs a real edge
     static let paperRule   = dyn(0xE4E7EC, 0x1B2536)   // college-rule lines (decorative, under everything)

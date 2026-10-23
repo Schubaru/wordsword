@@ -134,6 +134,7 @@ struct HomeView: View {
                 case .settings:             SettingsView()
                 case .games:                GamesHubView()
                 case .wordWheel:            WordWheelView()
+                case .linkingWords:         LinkingWordsView()
                 case .wordsFound:           WordsFoundView()
                 }
             }

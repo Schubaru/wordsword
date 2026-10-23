@@ -1,0 +1,264 @@
+# Linking words — the synonym bank. One cluster per line:  <tier> <HEADWORD>: word, word, word, …
+# Tiers: y yellow (everyday words, straight synonyms) · g green (moderate) · b blue (the synonyms are
+# uncommon, bookish words) · p pink/purple (words that mean the headword only in a second sense:
+# FINE, GRAND, CAPITAL, SOUND all mean EXCELLENT). Rules, enforced by LinkingPuzzle.selfCheck():
+# single lowercase words a–z, 2–10 letters, five or more per cluster; a word may appear in only one
+# tier (within a tier it may repeat, since one cluster per tier plays per day); a headword never
+# appears as a word anywhere. Append new clusters at the end of their tier — the daily combiner
+# walks each tier's list in a fixed seeded order, so inserting in the middle reshuffles history.
+# Keep the four tier counts pairwise coprime (selfCheck asserts the cycle outlives us all).
+
+y HAPPY: glad, cheerful, joyful, merry, upbeat, pleased, chipper
+y SAD: unhappy, gloomy, down, blue, glum, downcast, sorrowful
+y BIG: large, huge, giant, massive, enormous, vast, hefty
+y SMALL: little, tiny, mini, petite, slight, wee, compact
+y FAST: quick, rapid, swift, speedy, hasty, brisk, fleet
+y SLOW: sluggish, leisurely, unhurried, gradual, plodding, dawdling
+y HOT: scorching, boiling, sizzling, roasting, sweltering, blazing, baking
+y COLD: chilly, freezing, icy, frigid, nippy, wintry
+y ANGRY: mad, furious, irate, livid, fuming, heated, raging
+y SCARED: afraid, frightened, fearful, terrified, spooked, alarmed, nervous
+y TIRED: sleepy, weary, drowsy, exhausted, drained, bushed, pooped
+y SMART: clever, bright, brainy, wise, brilliant, gifted, astute
+y PRETTY: beautiful, lovely, gorgeous, attractive, cute, stunning, handsome
+y UGLY: hideous, unsightly, homely, grotesque, unlovely, repulsive
+y RICH: wealthy, affluent, moneyed, prosperous, flush, minted, opulent
+y POOR: broke, needy, penniless, destitute, strapped, insolvent
+y STRONG: powerful, sturdy, tough, robust, muscular, burly, brawny
+y WEAK: feeble, frail, flimsy, puny, fragile, delicate, limp
+y LOUD: noisy, booming, deafening, blaring, thunderous, roaring
+y QUIET: silent, hushed, muted, still, soundless, noiseless, mute
+y EASY: simple, effortless, painless, basic, cushy, breezy
+y HARD: difficult, tricky, demanding, arduous, taxing, rough
+y CLEAN: spotless, tidy, washed, pristine, immaculate, scrubbed, unsoiled
+y DIRTY: filthy, grimy, muddy, grubby, soiled, mucky, dusty
+y FUNNY: hilarious, amusing, comical, witty, humorous, droll, silly
+y BORING: dull, tedious, dreary, tiresome, monotonous, bland, flat
+y BRAVE: bold, fearless, daring, heroic, courageous, gutsy, valiant
+y KIND: nice, gentle, caring, thoughtful, tender, humane, warm
+y MEAN: cruel, nasty, unkind, spiteful, harsh, vicious, hurtful
+y OLD: ancient, aged, elderly, antique, vintage, worn, senior
+y NEW: fresh, novel, recent, modern, latest, current, unused
+y BEGIN: start, commence, initiate, originate, embark, trigger, kickoff
+y END: finish, stop, close, conclude, halt, cease, terminate
+y TALK: speak, converse, gab, chatter, discuss, natter, yak
+y WALK: stroll, stride, march, amble, hike, trek, saunter
+y RUN: sprint, jog, race, hurry, scurry, scamper, gallop
+y LOOK: watch, glance, peek, gaze, stare, view, peer
+y EAT: dine, munch, chew, devour, feast, nibble, consume
+y SLEEP: nap, doze, snooze, slumber, rest, drowse, kip
+y LAUGH: giggle, chuckle, cackle, snicker, guffaw, titter, chortle
+y CRY: weep, sob, bawl, wail, blubber, whimper, snivel
+y SHOUT: yell, holler, scream, bellow, bark, shriek, howl
+y THINK: ponder, consider, reflect, muse, reckon, believe, suppose
+y WANT: wish, desire, crave, fancy, covet, yearn, long
+y HELP: aid, assist, serve, abet, rescue, boost, relieve
+y BUY: purchase, acquire, obtain, procure, shop, order
+y GIVE: donate, hand, grant, present, offer, provide, bestow
+y TAKE: grab, seize, snatch, nab, clutch, capture, collar
+y MAKE: build, create, form, produce, assemble, construct, fashion
+y BREAK: smash, shatter, crack, bust, fracture, splinter, rupture
+y FIX: repair, mend, patch, restore, correct, remedy, service
+y HIDE: conceal, stash, bury, mask, cloak, veil, shroud
+y FIND: discover, locate, uncover, detect, unearth, track, retrieve
+y LIKE: enjoy, love, adore, relish, savor, appreciate, cherish
+y HATE: loathe, detest, despise, abhor, dislike, resent, scorn
+y HOUSE: home, dwelling, residence, abode, pad, lodging, quarters
+y CAR: auto, vehicle, motor, ride, wheels, sedan, automobile
+y JOB: career, occupation, post, position, gig, trade, vocation
+y FRIEND: pal, buddy, mate, chum, companion, ally, comrade
+y ENEMY: foe, rival, opponent, adversary, nemesis, antagonist
+y STORY: tale, yarn, account, narrative, legend, fable, saga
+
+g CALM: serene, placid, tranquil, peaceful, composed, mellow, relaxed
+g ANXIOUS: uneasy, worried, tense, jittery, fretful, edgy, restless
+g CONFUSED: puzzled, baffled, bewildered, perplexed, muddled, dazed, stumped
+g SURPRISED: amazed, astonished, startled, stunned, staggered, shocked, floored
+g PROUD: smug, haughty, arrogant, vain, conceited, cocky, lofty
+g HUMBLE: modest, meek, lowly, unassuming, demure, mild
+g HONEST: truthful, sincere, candid, frank, upfront, genuine, direct
+g SNEAKY: sly, crafty, cunning, wily, devious, shifty, furtive
+g STUBBORN: obstinate, headstrong, willful, mulish, adamant, pigheaded
+g LAZY: idle, slothful, indolent, listless, lethargic, shiftless
+g BUSY: hectic, bustling, swamped, occupied, engaged, active, frantic
+g STRANGE: odd, weird, bizarre, peculiar, curious, quirky, uncanny
+g NORMAL: usual, ordinary, typical, regular, standard, average, routine
+g FAMOUS: renowned, celebrated, noted, eminent, legendary, prominent, acclaimed
+g SECRET: hidden, covert, private, classified, undercover, unseen
+g OBVIOUS: clear, evident, apparent, blatant, glaring, patent, plain
+g RARE: scarce, uncommon, unusual, infrequent, sparse, limited, scant
+g COMMON: frequent, everyday, familiar, widespread, prevalent, rife, general
+g ENOUGH: ample, plenty, sufficient, adequate, abundant, copious
+g EMPTY: vacant, bare, hollow, blank, void, deserted, unfilled
+g FULL: packed, crammed, stuffed, brimming, bursting, filled, replete
+g WET: damp, moist, soggy, soaked, drenched, humid, dank
+g DRY: arid, parched, dehydrated, withered, sere, baked, waterless
+g SHINY: glossy, gleaming, glistening, lustrous, polished, burnished, glinting
+g DARK: dim, murky, shadowy, unlit, dusky, sunless, shady
+g SMOOTH: silky, even, level, glassy, satiny, velvety, sleek
+g BUMPY: uneven, jagged, rugged, lumpy, coarse, rutted, knobbly
+g POINTED: spiky, prickly, barbed, acute, piercing, pointy, sharpened
+g SOFT: fluffy, squishy, spongy, plush, downy, yielding, pillowy
+g CHEAP: affordable, bargain, budget, economical, reasonable, discount
+g EXPENSIVE: costly, pricey, dear, steep, lavish, premium, upscale
+g FIRST: initial, earliest, original, primary, opening, foremost, leading
+g LAST: final, closing, ultimate, concluding, hindmost, rearmost, ending
+g WHOLE: entire, complete, total, intact, undivided, unbroken, overall
+g PART: piece, portion, section, segment, fragment, slice, chunk
+g CHOOSE: pick, select, elect, opt, prefer, decide, nominate
+g REFUSE: decline, reject, deny, rebuff, spurn, veto, snub
+g ALLOW: permit, let, authorize, approve, sanction, enable, license
+g FORBID: ban, prohibit, bar, outlaw, disallow, proscribe, embargo
+g ANSWER: reply, respond, retort, rejoin, counter, react
+g ASK: inquire, question, query, quiz, request, probe
+g GATHER: collect, amass, accumulate, compile, hoard, muster, convene
+g SCATTER: disperse, spread, strew, sprinkle, dispel, dissipate, litter
+g GROW: expand, enlarge, swell, increase, develop, sprout, thrive
+g SHRINK: contract, dwindle, diminish, lessen, decrease, wane, recede
+g PRAISE: applaud, commend, laud, compliment, extol, hail, flatter
+g BLAME: accuse, fault, condemn, censure, reproach, indict, denounce
+g TRICK: fool, dupe, con, hoodwink, deceive, swindle, bamboozle
+g ARGUE: quarrel, bicker, squabble, dispute, wrangle, feud, spar
+g AGREE: concur, consent, assent, accord, accept, acquiesce, nod
+g LEAVE: depart, exit, go, vacate, withdraw, decamp, bail
+g ARRIVE: come, reach, land, appear, enter, attain, alight
+g DESTROY: wreck, ruin, demolish, raze, devastate, obliterate, flatten
+g PROTECT: guard, shield, defend, shelter, safeguard, secure, preserve
+g ATTACK: assault, strike, raid, charge, ambush, storm, assail
+g FEAR: dread, terror, fright, panic, horror, alarm, phobia
+g JOY: delight, bliss, glee, elation, rapture, jubilation, euphoria
+g ANGER: rage, fury, wrath, ire, outrage, temper, choler
+g TRIP: journey, voyage, excursion, outing, jaunt, tour, expedition
+g MISTAKE: error, blunder, gaffe, lapse, oversight, goof, misstep
+g IDEA: notion, thought, concept, theory, plan, hunch, brainwave
+g GIFT: offering, donation, handout, bonus, keepsake, token, goodie
+
+b LEARNED: erudite, scholarly, lettered, bookish, cerebral, academic, studious
+b TALKATIVE: loquacious, garrulous, voluble, chatty, effusive, gabby, prattling
+b STINGY: miserly, frugal, penurious, grasping, mingy, ungenerous, thrifty
+b WASTEFUL: prodigal, profligate, reckless, excessive, uneconomic, immoderate, thriftless
+b BRIEF: fleeting, ephemeral, transient, momentary, passing, transitory, evanescent
+b ETERNAL: endless, perpetual, timeless, immortal, undying, ceaseless, infinite
+b HARMFUL: noxious, pernicious, baneful, toxic, injurious, damaging, malignant
+b HARMLESS: innocuous, benign, innocent, safe, nontoxic, anodyne
+b WORDY: verbose, prolix, longwinded, rambling, windy, diffuse, turgid
+b TERSE: curt, brusque, laconic, pithy, succinct, concise, clipped
+b FRIENDLY: affable, amiable, genial, cordial, convivial, gregarious, sociable
+b UNFRIENDLY: aloof, hostile, surly, distant, unsociable, forbidding, frosty
+b GLOWING: radiant, luminous, effulgent, lambent, refulgent, shining, aglow
+b FAKE: bogus, sham, phony, spurious, ersatz, faux, pseudo
+b REAL: authentic, actual, legitimate, veritable, true, factual, tangible
+b GREEDY: avaricious, rapacious, covetous, voracious, gluttonous, insatiable, hoggish
+b ENRAGED: incensed, apoplectic, seething, wrathful, choleric, infuriated, rabid
+b LUCKY: fortunate, charmed, blessed, favored, auspicious, propitious, fortuitous
+b UNLUCKY: hapless, luckless, jinxed, cursed, doomed, wretched, blighted
+b HUNGRY: ravenous, famished, starving, peckish, esurient, starved, unfed
+b CAREFUL: meticulous, scrupulous, fastidious, diligent, thorough, cautious, prudent
+b CARELESS: negligent, slapdash, sloppy, slipshod, heedless, remiss, lax
+b SHY: timid, bashful, diffident, reticent, retiring, coy, mousy
+b OUTGOING: ebullient, exuberant, vivacious, bubbly, expansive, extrovert, lively
+b FLAWLESS: impeccable, perfect, faultless, ideal, exemplary, consummate, textbook
+b FAULTY: defective, flawed, deficient, imperfect, broken, shoddy, buggy
+b GENEROUS: bountiful, munificent, openhanded, liberal, charitable, benevolent, bighearted
+b BRUTAL: savage, barbaric, ruthless, merciless, ferocious, heartless, pitiless
+b SKILLED: adept, deft, adroit, proficient, masterful, dexterous, expert
+b CLUMSY: awkward, maladroit, bungling, inept, gauche, ungainly, lumbering
+b OBEDIENT: compliant, docile, dutiful, submissive, biddable, tractable, amenable
+b REBELLIOUS: defiant, mutinous, insurgent, unruly, wayward, seditious, contrary
+b SENSIBLE: judicious, sagacious, practical, rational, pragmatic, sane, sober
+b FOOLISH: inane, asinine, fatuous, witless, daft, absurd, idiotic
+b IMMENSE: colossal, gargantuan, mammoth, titanic, prodigious, monumental, humongous
+b MINUSCULE: minute, diminutive, teeny, miniature, negligible, pintsized, itty
+b RAUCOUS: strident, discordant, grating, jarring, rowdy, boisterous, clamorous
+b IDYLLIC: pastoral, bucolic, halcyon, arcadian, heavenly, blissful, unspoiled
+b MOURNFUL: melancholy, doleful, lugubrious, woeful, plaintive, elegiac, funereal
+b ELATED: jubilant, exultant, euphoric, overjoyed, ecstatic, rapturous, gleeful
+b POMPOUS: bombastic, grandiose, imperious, portentous, orotund, snooty, uppity
+b DISHONEST: deceitful, twofaced, mendacious, untruthful, lying, crooked, perfidious
+b SQUALID: sordid, seedy, slummy, fetid, foul, unclean, rundown
+b RESERVED: taciturn, withdrawn, guarded, restrained, inhibited, reclusive, solitary
+b UNCLEAR: vague, ambiguous, hazy, nebulous, obscure, cryptic, fuzzy
+b PRECISE: exact, accurate, specific, pinpoint, rigorous, exacting, unerring
+b WANDER: roam, rove, ramble, meander, drift, traipse, gallivant
+b SCOLD: berate, chide, rebuke, reprimand, admonish, upbraid, castigate
+b SOOTHE: pacify, placate, mollify, appease, assuage, allay, lull
+b ANNOY: irritate, vex, irk, nettle, rile, needle, gall
+b THRILL: electrify, enthrall, galvanize, excite, enrapture, exhilarate, rouse
+b BEG: plead, implore, beseech, entreat, petition, importune, supplicate
+b STEAL: pilfer, filch, purloin, embezzle, poach, lift, thieve
+b FORGIVE: pardon, excuse, absolve, exonerate, acquit, condone, exculpate
+b WORSEN: degenerate, decay, regress, backslide, slump, sour, fester
+b IMPROVE: enhance, better, refine, upgrade, elevate, ameliorate, enrich
+b COPY: imitate, mimic, replicate, duplicate, emulate, ape, parrot
+b EXAGGERATE: overstate, embellish, inflate, overdo, magnify, overplay, embroider
+b OMIT: skip, exclude, neglect, bypass, elide, forgo, miss
+b INSULT: offend, affront, disparage, malign, belittle, demean, deride
+b INDUSTRIOUS: assiduous, sedulous, tireless, zealous, dedicated, untiring, dogged
+b STRICT: stern, rigid, severe, austere, stringent, inflexible, unbending
+b LENIENT: permissive, indulgent, tolerant, forgiving, easygoing, clement, merciful
+b PLENTIFUL: profuse, bounteous, teeming, lush, prolific, galore, abounding
+b OUTDATED: dated, stale, fusty, musty, antiquated, obsolete, bygone
+
+p EXCELLENT: fine, grand, capital, sound, sterling, choice, prime
+p SUPPORT: back, champion, second, uphold, prop, shoulder, bolster
+p CHEAT: fleece, rook, sting, stiff, shaft, bilk, cozen
+p CRITICIZE: pan, slam, roast, knock, slate, rip, hammer
+p FAIL: flop, bomb, tank, fold, founder, flunk, fizzle
+p SUCCEED: fly, click, score, deliver, prevail, conquer, blossom
+p FLEE: bolt, split, scram, skedaddle, scarper, vamoose, abscond
+p UNDERSTAND: get, follow, see, grasp, catch, twig, fathom
+p TOLERATE: stand, bear, brook, abide, swallow, weather, wear
+p MISLEAD: snow, bluff, hustle, sucker, finesse, spoof, gull
+p MONEY: bread, dough, cheddar, bucks, cabbage, lettuce, clams
+p NONSENSE: rubbish, bunk, rot, tripe, baloney, hogwash, drivel
+p VERY: awfully, terribly, dead, jolly, mighty, plumb, thumping
+p DRUNK: tight, loaded, plastered, hammered, wasted, lit, sloshed
+p CRAZY: nuts, bananas, cuckoo, crackers, bonkers, loopy, potty
+p STYLISH: sharp, snappy, dapper, natty, slick, swish, chic
+p EXCITED: pumped, stoked, hyped, amped, psyched, jazzed, buzzing
+p DIE: expire, perish, croak, pass, succumb, flatline, snuff
+p CINCH: breeze, snap, picnic, doddle, walkover, pushover, cakewalk
+p DEFEAT: beat, rout, whip, thrash, cream, drub, clobber
+p HIT: belt, sock, clock, deck, slug, bop, wallop
+p COMPLAIN: gripe, grouse, carp, beef, moan, grumble, bellyache
+p BRAG: boast, crow, gloat, swagger, vaunt, bluster, strut
+p DISMISS: fire, sack, axe, can, boot, discharge, release
+p MOCK: rib, razz, tease, josh, rag, taunt, jeer
+p COWARD: chicken, yellow, wimp, mouse, dastard, poltroon, milksop
+p ANNOYED: peeved, sore, ticked, miffed, cross, salty, narked
+p PRISON: pen, slammer, clink, joint, cooler, stir, pokey
+p CHILD: kid, minor, nipper, sprog, tot, tyke, bairn
+p HEAD: noggin, bean, dome, crown, noodle, melon, skull
+p FACE: mug, puss, visage, dial, features, phiz, mush
+p STOMACH: gut, belly, tummy, paunch, middle, abdomen, innards
+p GOOD: cool, neat, sick, dope, rad, groovy, ace
+p QUIT: kick, shake, chuck, ditch, jettison, renounce, forswear
+p CHAT: rap, jaw, chin, rabbit, gossip, schmooze, confab
+p INFORMER: rat, snitch, grass, stoolie, squealer, canary, fink
+p POLICE: fuzz, heat, law, cops, force, coppers, plod
+p COFFEE: joe, java, brew, mud, cuppa, jolt, latte
+p TOILET: john, loo, throne, privy, lav, latrine, commode
+p NOTHING: zilch, nil, nada, zero, squat, nought, naught
+p SPEED: clip, pace, lick, tempo, rate, velocity, haste
+p ENTHUSIAST: nut, buff, fiend, fan, bug, maven, devotee
+p DRESS: frock, gown, shift, slip, tunic, robe, smock
+p BOAT: craft, vessel, ship, tub, barge, dinghy, launch
+p BOSS: chief, manager, superior, skipper, gaffer, honcho, supervisor
+p BRIBE: grease, sweetener, backhander, kickback, payoff, inducement, sop
+p LUCK: fortune, chance, fluke, providence, karma, fate, lot
+p ENERGY: pep, zip, vim, zing, oomph, verve, gusto
+p PREDICAMENT: pickle, jam, hole, bind, spot, scrape, corner
+p DECEASED: late, gone, departed, lost, fallen, lifeless, extinct
+p BIT: dash, pinch, touch, hint, trace, drop, splash
+p WORK: toil, labor, slog, grind, graft, sweat, travail
+p CLOTHES: threads, gear, duds, togs, garb, attire, getup
+p MOUTH: trap, gob, kisser, maw, yap, chops, cakehole
+p RELAX: chill, unwind, loosen, lounge, veg, decompress, laze
+p LIE: fib, whopper, porky, untruth, fiction, falsehood, invention
+p FLAUNT: parade, flash, sport, display, brandish, flourish, wave
+p FOOD: grub, chow, eats, fare, nosh, tucker, vittles
+p FIGHT: scrap, brawl, scuffle, tussle, fray, bout, rumble
+p SWEETHEART: flame, crush, squeeze, darling, beloved, honey, steady
+p IMPRESSIVE: killer, striking, arresting, dazzling, imposing, splendid, majestic
+p EAGER: keen, raring, itching, dying, champing, avid, thirsty
+p PAY: foot, settle, square, cover, spring, stump, ante

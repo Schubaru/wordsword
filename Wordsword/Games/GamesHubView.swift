@@ -4,18 +4,22 @@ import SwiftUI
 struct GamesHubView: View {
     @Environment(Router.self) private var router
     @State private var save = WordWheelSave.load()
+    @State private var linking = LinkingWordsSave.load()
 
     var body: some View {
         List {
             Section {
-                row("Word Wheel", detail: "Level \(save.level) · \(save.coins) coins", icon: "a.circle", edge: .only) {
+                row("Word Wheel", detail: "Level \(save.level) · \(save.coins) coins", icon: "a.circle", edge: .first) {
                     router.path.append(.wordWheel)
                 }
+                row("Linking words", detail: LinkingWords.cardDetail(linking), icon: "square.grid.2x2", edge: .last) {
+                    router.path.append(.linkingWords)
+                }
             } footer: {
-                Text("Drag across a wheel of letters to spell words. Every word you find is one you can look up.")
+                Text("Drag across a wheel of letters to spell words, or sort sixteen words into four groups that mean the same thing. Every word you find is one you can look up.")
             }
             Section {
-                row("Words found", detail: "\(save.history.count)", icon: "text.badge.checkmark", edge: .only) {
+                row("Words found", detail: "\(WordsFoundView.all().count)", icon: "text.badge.checkmark", edge: .only) {
                     router.path.append(.wordsFound)
                 }
             }
@@ -23,7 +27,7 @@ struct GamesHubView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .paperScreen("Games")
-        .onAppear { save = WordWheelSave.load() }
+        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load() }
     }
 
     private func row(_ title: String, detail: String, icon: String, edge: SheetRowEdge, action: @escaping () -> Void) -> some View {
@@ -42,7 +46,13 @@ struct GamesHubView: View {
 /// Every word found in a game, newest first. Tap one to define it.
 struct WordsFoundView: View {
     @Environment(Router.self) private var router
-    @State private var words = WordWheelSave.load().history
+    @State private var words = WordsFoundView.all()
+
+    /// Both games' finds, newest first within each, without repeats.
+    static func all() -> [String] {
+        var seen = Set<String>()
+        return (LinkingWordsSave.load().history + WordWheelSave.load().history).filter { seen.insert($0).inserted }
+    }
 
     var body: some View {
         List {
@@ -71,7 +81,7 @@ struct WordsFoundView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .paperScreen("Words found")
-        .onAppear { words = WordWheelSave.load().history }
+        .onAppear { words = Self.all() }
     }
 }
 
@@ -83,6 +93,7 @@ struct GamesEntry: View {
     let rule: CGFloat
     @Environment(Router.self) private var router
     @State private var save = WordWheelSave.load()
+    @State private var linking = LinkingWordsSave.load()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -96,8 +107,13 @@ struct GamesEntry: View {
             } action: {
                 router.path.append(.wordWheel)
             }
+            GameCard(title: "Linking words", detail: LinkingWords.cardDetail(linking), rule: rule) {
+                LinkDoodle(color: .ink, highlighter: .highlighter)
+            } action: {
+                router.path.append(.linkingWords)
+            }
         }
-        .onAppear { save = WordWheelSave.load() }
+        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load() }
     }
 }
 
