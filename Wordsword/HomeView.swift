@@ -53,10 +53,12 @@ struct HomeView: View {
     @AppStorage("wotd.dismissedOn") private var wotdDismissedOn = ""
     /// Today, re-read whenever the app comes back, so a banner put away last night returns this morning.
     @State private var day = Self.today
-    /// The banner slides in once Home is up, not on the tick it's inserted under the splash.
-    @State private var bannerIn = false
+    /// The banner is only down while the page shows: the search sheet up hides it, the sheet coming
+    /// down brings it back. A plain @State drives it, not the @AppStorage flag — changes to that
+    /// arrive outside `withAnimation`, so the banner used to blink out instead of leaving.
+    @State private var showBanner = false
     @State private var bannerHeight: CGFloat = 0
-    private var showBanner: Bool { bannerIn && wotdDismissedOn != day }
+    private var bannerWanted: Bool { !expanded && wotdDismissedOn != day }
     private var sheetPeek: CGFloat { trail.count > 1 ? rowsPeek + chainLine : rowsPeek }
 
     /// 0 → typing, 1 → mic committed. Everything that recedes for voice reads this directly, so the
@@ -98,10 +100,7 @@ struct HomeView: View {
                 // The sheet holds the search: the field is pinned under the grabber and the list
                 // scrolls beneath it. It rides above the keyboard on its own (the container shrinks),
                 // so typing never has to push it out of the way.
-                // While the banner floats over the header the expanded sheet starts under it, so the
-                // search field is never covered; it rises back when the banner goes.
-                BottomSheet(expanded: $expanded, peek: sheetPeek,
-                            top: showBanner ? max(72, 8 + bannerHeight + 12) : 72) {
+                BottomSheet(expanded: $expanded, peek: sheetPeek) {
                     searchBlock
                 } content: {
                     sheetContent
@@ -113,16 +112,21 @@ struct HomeView: View {
                     focused = false
                 }
 
-                if showBanner {
-                    wordOfTheDay
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bannerHeight = $0 }
-                        .padding(.horizontal, 12)
-                        .padding(.top, 8)
-                        .opacity(fadeOut(toVoice))
-                        .allowsHitTesting(toVoice == 0)
-                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
-                        .zIndex(1)
-                }
+                // Always laid out, parked above the screen when it isn't down: it's measured and its
+                // meaning is fetched before the first drop, so it never grows on the way in, and it
+                // can leave with an animation because it never leaves the tree.
+                wordOfTheDay
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bannerHeight = $0 }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                    // Parked clear of the top edge: its height, the 8 above it, the tallest top safe
+                    // area (~62) and its shadow (~28). Not measured on screen — a global frame read
+                    // under this offset includes it, and the two chase each other.
+                    .offset(y: showBanner || reduceMotion ? 0 : -(bannerHeight + 110))
+                    .opacity(showBanner ? fadeOut(toVoice) : reduceMotion ? 0 : 1)
+                    .allowsHitTesting(showBanner && toVoice == 0)
+                    .accessibilityHidden(!showBanner)
+                    .zIndex(1)
             }
             .navigationDestination(for: Route.self) { route in
                 switch route {
@@ -149,7 +153,17 @@ struct HomeView: View {
             guard !Task.isCancelled else { return }
             router.focusInput = false      // a deep link that landed before Home existed is satisfied here
             focused = true
-            withAnimation(reduceMotion ? nil : Motion.sheet) { bannerIn = true }
+        }
+        // Up and away at once when the sheet rises (it has to clear before the sheet gets there), on
+        // ✕, a flick or a new day; down only once the sheet has settled, as its own beat.
+        .task(id: bannerWanted) {
+            guard bannerWanted else {
+                withAnimation(reduceMotion ? Motion.state : Motion.lift) { showBanner = false }
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? Motion.state : Motion.drop) { showBanner = true }
         }
         .onChange(of: router.focusInput) { _, f in if f { router.focusInput = false; raiseKeyboard() } }
         .onChange(of: router.path) { _, p in
@@ -285,7 +299,7 @@ struct HomeView: View {
             router.path.append(.define(word))
             wotdDismissedOn = day
         } dismiss: {
-            withAnimation(reduceMotion ? nil : Motion.sheet) { wotdDismissedOn = day }
+            wotdDismissedOn = day       // `bannerWanted` flips and the banner lifts away
         }
         .id(word)       // a new day is a new word
     }

@@ -110,7 +110,9 @@ struct WordOfTheDayBanner: View {
         .shadow(color: .shadow, radius: 20, y: 8)
         .offset(y: lift)
         // A flick up puts it away, the way a notification goes. Down does nothing: there's nowhere to go.
-        .simultaneousGesture(
+        // High priority, so a flick never also lands as a tap (the banner rides the finger, so the lift
+        // ends inside it); a tap moves less than 12pt and still reaches the button and icons.
+        .highPriorityGesture(
             DragGesture(minimumDistance: 12)
                 .onChanged { v in lift = min(0, v.translation.height) }
                 .onEnded { v in

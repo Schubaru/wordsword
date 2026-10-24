@@ -51,6 +51,10 @@ enum Motion {
     static let sheet    = Animation.spring(response: 0.42, dampingFraction: 0.9)
     /// A sheet clearing out before the keyboard arrives: ease-out-quint, gone by 150ms.
     static let sheetExit = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.18)
+    /// The word of the day coming down, the way a notification does: a hair past, then settled.
+    static let drop     = Animation.spring(response: 0.55, dampingFraction: 0.8)
+    /// …and going back up: ease-out-quint, so a flick carries straight on out of the top.
+    static let lift     = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.32)
     /// The sword slash: ease-out-expo, decisive.
     static let slash    = Animation.timingCurve(0.16, 1, 0.3, 1, duration: 0.42)
 }
