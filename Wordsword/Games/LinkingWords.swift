@@ -23,7 +23,7 @@ import Observation
     private(set) var solved: [LinkingPuzzle.Group] = []
     private(set) var mistakes = 0
     private(set) var phase: Phase = .playing
-    /// True from Submit until the result lands: the tiles are hopping.
+    /// True from the fourth tap until the result lands: the tiles are hopping.
     private(set) var submitting = false
     /// True while the unsolved groups are being revealed after the fourth strike.
     private(set) var revealing = false
@@ -111,6 +111,7 @@ import Observation
         if let i = selected.firstIndex(of: word) { selected.remove(at: i); return }
         guard selected.count < 4 else { return }
         selected.append(word)
+        if selected.count == 4 { submit() }
     }
 
     func deselectAll() {
@@ -217,17 +218,15 @@ import Observation
         save.store()
     }
 
-    /// Where you are in today's puzzle, for the Home card and the hub row. Never a zero: a lost day
-    /// says "Back tomorrow", a missed streak just isn't mentioned.
+    /// Where you are in today's puzzle, for the Home card and the hub row: how many mistakes are
+    /// left until the day's over, or that it is.
     nonisolated static func cardDetail(_ save: LinkingWordsSave) -> String {
         let n = LinkingPuzzle.number()
-        let streak = save.streak(asOf: n)
-        let tail = streak > 0 ? " · \(streak)-day streak" : ""
-        guard save.number == n, !save.guesses.isEmpty else { return "Today's puzzle" + tail }
-        if save.lastSolved == n { return "Solved" + tail }
+        guard save.number == n, !save.guesses.isEmpty else { return "\(maxMistakes) mistakes left" }
+        if save.lastSolved == n { return "Solved" }
         let puzzle = LinkingPuzzle.make(number: n)
-        let wrong = save.guesses.filter { puzzle.group(matching: $0) == nil }.count
-        return wrong >= maxMistakes ? "Back tomorrow" : "In progress" + tail
+        let left = maxMistakes - save.guesses.filter { puzzle.group(matching: $0) == nil }.count
+        return left <= 0 ? "Back tomorrow" : "\(left) mistake\(left == 1 ? "" : "s") left"
     }
 
     func markRulesSeen() {

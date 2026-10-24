@@ -14,7 +14,7 @@ struct LinkingWordsView: View {
     @State private var beatKind = SensoryFeedback.success
     @State private var reaction: KnightPose = .idle
     @State private var shake: CGFloat = 0
-    /// Tiles mid-hop on Submit.
+    /// Tiles mid-hop once the fourth word is tapped.
     @State private var hopping: Set<String> = []
     /// Strips that were already on the board when the screen opened draw themselves in no time.
     @State private var drawn = 0
@@ -118,16 +118,8 @@ struct LinkingWordsView: View {
             Button("Results") { showResults = true }
                 .buttonStyle(CTAStyle(weight: .outlined))
         } else {
-            // Three pills in a row; at accessibility sizes Submit takes its own row above the other two.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) { shuffleButton; deselectButton; submitButton }
-                VStack(spacing: 10) {
-                    submitButton
-                    HStack(spacing: 10) { shuffleButton; deselectButton }
-                }
-            }
-            .animation(reduceMotion ? nil : Motion.state, value: game.selected.isEmpty)
-            .animation(reduceMotion ? nil : Motion.state, value: game.canSubmit)
+            HStack(spacing: 10) { shuffleButton; deselectButton }
+                .animation(reduceMotion ? nil : Motion.state, value: game.selected.isEmpty)
         }
     }
 
@@ -143,14 +135,6 @@ struct LinkingWordsView: View {
             .disabled(game.selected.isEmpty)
             .accessibilityLabel("Deselect all")
     }
-    private var submitButton: some View {
-        Button { game.submit() } label: { chip("Submit", on: game.canSubmit) }
-            .buttonStyle(PressStyle())
-            .opacity(game.canSubmit ? 1 : 0.45)
-            .disabled(!game.canSubmit)
-            .accessibilityHint(game.canSubmit ? "" : "Pick four words first")
-    }
-
     /// The game's pills: pen-wash at rest, the pen itself when it's the move to make.
     private func chip(_ text: String, on: Bool) -> some View {
         Text(text)
@@ -496,7 +480,7 @@ struct HowToPlaySheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 line("Sixteen words. Four groups of four that mean the same thing.")
-                line("Tap four, then Submit. A right group gets highlighted and named.")
+                line("Tap four words. The fourth tap is the guess: a right group gets highlighted and named.")
                 line("Four mistakes and the board shows itself. A new one every midnight.")
                 SolvedStrip(group: example, drawn: true) { _ in }
                     .padding(.top, 10)
