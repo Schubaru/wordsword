@@ -7,6 +7,7 @@ struct LinkingWordsView: View {
     @Environment(Router.self) private var router
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .body) private var rule: CGFloat = 28
     @State private var game = LinkingWords()
 
@@ -48,6 +49,13 @@ struct LinkingWordsView: View {
             await game.load()
             drawn = game.solved.count
             if !game.save.rulesSeen { showRules = true; game.markRulesSeen() }
+        }
+        // Midnight passed while the app was away: back in the foreground means the new day's board.
+        // A board left open past midnight stays playable until then.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, game.isStale else { return }
+            showResults = false
+            Task { await game.load(); drawn = game.solved.count }
         }
         .sensoryFeedback(trigger: beat) { _, _ in beatKind }
         .sensoryFeedback(trigger: game.selected.count) { old, new in new > old ? .selection : nil }
@@ -161,8 +169,8 @@ struct LinkingWordsView: View {
             KnightDoodle(pose: game.phase == .won ? .cheer : .idle, color: .ink, accent: .pen)
                 .frame(width: 96, height: 96)
             Text(game.verdict).font(.headword).foregroundStyle(Color.ink)
-            Text(streakLine).font(.body).foregroundStyle(Color.ink2)
-                .contentTransition(.numericText())
+            StatsRow(stats: game.save.record, streak: game.streak, best: game.save.bestStreak)
+                .padding(.vertical, 4)
             ShareGrid(rows: game.shareRows)
                 .padding(.vertical, 6)
             ShareLink(item: game.shareText) { Text("Share") }
@@ -189,14 +197,6 @@ struct LinkingWordsView: View {
         })
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape) { showResults = false }
-    }
-
-    private var streakLine: String {
-        switch (game.phase, game.streak) {
-        case (.lost, _): "Back tomorrow"
-        case (_, 1): "Day one of a streak"
-        case (_, let n): "\(n)-day streak"
-        }
     }
 
     private func countdown(from date: Date) -> String {
@@ -448,6 +448,53 @@ private struct TallyStrike: Shape {
         p.move(to: CGPoint(x: r.minX - 2, y: r.minY + r.height * 0.78))
         p.addLine(to: CGPoint(x: r.maxX + 2, y: r.minY + r.height * 0.22))
         return p
+    }
+}
+
+/// Completed · Win % · Current streak · Max streak, between two ruled hairlines — the notebook's
+/// own lines. Four across, labels wrapping to two lines; two by two at accessibility sizes.
+private struct StatsRow: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let stats: LinkingWordsSave.Stats
+    let streak: Int
+    let best: Int
+
+    private var items: [(value: String, label: String)] {
+        [("\(stats.played)", "Completed"), ("\(stats.winPercent)", "Win %"),
+         ("\(streak)", "Current streak"), ("\(best)", "Max streak")]
+    }
+
+    var body: some View {
+        Group {
+            if typeSize.isAccessibilitySize {
+                Grid(horizontalSpacing: 8, verticalSpacing: 14) {
+                    GridRow { stat(items[0]); stat(items[1]) }
+                    GridRow { stat(items[2]); stat(items[3]) }
+                }
+            } else {
+                HStack(alignment: .top, spacing: 4) { ForEach(items, id: \.label, content: stat) }
+            }
+        }
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .top) { Rectangle().fill(Color.rule).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.rule).frame(height: 1) }
+    }
+
+    private func stat(_ item: (value: String, label: String)) -> some View {
+        VStack(spacing: 2) {
+            Text(item.value)
+                .font(.system(.title, design: .rounded).weight(.regular))
+                .monospacedDigit()
+                .foregroundStyle(Color.ink)
+                .contentTransition(.numericText())
+            Text(item.label)
+                .font(.pron).foregroundStyle(Color.ink2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -69,10 +69,8 @@ import Observation
     /// Builds today's puzzle off the main thread, starts a fresh day if the date rolled over, and
     /// replays today's guesses so the board comes back exactly as it was left.
     func load() async {
-        var n = LinkingPuzzle.number()
-        #if DEBUG
-        if let d = ProcessInfo.processInfo.environment["LINKING_DAY"], let v = Int(d) { n = v }
-        #endif
+        let n = Self.today()
+        justFinished = false
         let built = await Task.detached(priority: .userInitiated) { LinkingPuzzle.make(number: n) }.value
         puzzle = built
         if save.number != n || save.order.count != built.order.count || Set(save.order) != Set(built.order) {
@@ -90,6 +88,17 @@ import Observation
         replay()
     }
 
+    /// Today's puzzle number — the date's, or `LINKING_DAY`'s in DEBUG.
+    private static func today() -> Int {
+        #if DEBUG
+        if let d = ProcessInfo.processInfo.environment["LINKING_DAY"], let v = Int(d) { return v }
+        #endif
+        return LinkingPuzzle.number()
+    }
+
+    /// The board on screen is an earlier day's: midnight passed while the app was open or away.
+    var isStale: Bool { puzzle != nil && puzzle?.number != Self.today() }
+
     private func replay() {
         guard let puzzle else { return }
         solved = []; mistakes = 0; phase = .playing; selected = []
@@ -98,10 +107,11 @@ import Observation
         }
         if solved.count == puzzle.groups.count {
             phase = .won
-            credit()
+            tally(won: true)
         } else if mistakes >= Self.maxMistakes {
             solved += puzzle.groups.filter { !solved.contains($0) }
             phase = .lost
+            tally(won: false)
         }
     }
 
@@ -177,22 +187,33 @@ import Observation
     private func gone(in word: String) -> Bool { solved.contains { $0.words.contains(word) } }
 
     private func win() {
-        credit()
+        tally(won: true)
         justFinished = true
         phase = .won
     }
 
-    /// Counts today towards the streak, once.
-    private func credit() {
-        guard save.lastSolved != save.number else { return }
-        save.streak = save.lastSolved == save.number - 1 ? save.streak + 1 : 1
-        save.bestStreak = max(save.bestStreak, save.streak)
-        save.lastSolved = save.number
+    /// Counts today once, the NYT way: a finished day is played; a win extends the streak, a loss
+    /// ends it.
+    private func tally(won: Bool) {
+        var r = save.record
+        guard r.last != save.number else { return }
+        r.played += 1
+        r.last = save.number
+        if won {
+            r.won += 1
+            save.streak = save.lastSolved == save.number - 1 ? save.streak + 1 : 1
+            save.bestStreak = max(save.bestStreak, save.streak)
+            save.lastSolved = save.number
+        } else {
+            save.streak = 0
+        }
+        save.stats = r
         save.store()
     }
 
     /// Four strikes: the rest of the groups come up one at a time, then the day is over.
     private func lose(_ puzzle: LinkingPuzzle) {
+        tally(won: false)
         selected = []
         show("Next time")
         revealing = true

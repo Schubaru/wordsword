@@ -96,8 +96,9 @@ struct LinkingPuzzle: Hashable, Sendable {
     }
 
     /// Puzzle #1 is launch day. Days are counted in the device's calendar, so the puzzle changes at
-    /// local midnight — everyone on the same date gets the same board.
-    static let epoch = DateComponents(year: 2026, month: 10, day: 24)
+    /// local midnight — everyone on the same date gets the same board. Must be on or before the
+    /// first day anyone can play: every earlier date clamps to #1, so the board wouldn't change.
+    static let epoch = DateComponents(year: 2026, month: 10, day: 23)
 
     static func number(for date: Date = .now, calendar: Calendar = .current) -> Int {
         guard let start = calendar.date(from: epoch) else { return 1 }
@@ -147,6 +148,13 @@ extension LinkingPuzzle {
             }
         }
         for c in bank.clusters { assert(seen[c.headword.lowercased()] == nil, "headword \(c.headword) is also a word") }
+        // Consecutive days get consecutive puzzles, across midnight and a DST change.
+        let cal = Calendar.current
+        for (y, m, d, n) in [(2026, 10, 23, 1), (2026, 10, 24, 2), (2026, 11, 2, 11)] {
+            let date = cal.date(from: DateComponents(year: y, month: m, day: d, hour: 23, minute: 59))!
+            assert(number(for: date) == n, "\(y)-\(m)-\(d) should be puzzle #\(n), got #\(number(for: date))")
+            assert(number(for: nextPuzzle(after: date)) == n + 1, "the day after #\(n) isn't #\(n + 1)")
+        }
         let counts = LinkTier.allCases.map { bank.byTier[$0]?.count ?? 0 }
         assert(counts.allSatisfy { $0 > 0 }, "a tier has no clusters: \(counts)")
         let lcm = counts.reduce(1) { a, b in a / gcd(a, b) * b }
