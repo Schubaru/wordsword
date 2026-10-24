@@ -40,6 +40,18 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_IDENTITY: ""
         CODE_SIGNING_REQUIRED: "NO"
+      configs:
+        # On a real iPhone, Debug signs with the free Personal Team. A free team can't carry Sign in
+        # with Apple, so the device build drops that entitlement (the button says it can't sign in),
+        # and it uses a .dev bundle ID so the real one stays unclaimed for the paid team. Simulator
+        # builds are untouched. Once enrollment clears: the paid team's ID, and drop these overrides.
+        Debug:
+          DEVELOPMENT_TEAM: DJKZQ223JK
+          CODE_SIGN_STYLE: Automatic
+          "CODE_SIGN_IDENTITY[sdk=iphoneos*]": Apple Development
+          "CODE_SIGNING_REQUIRED[sdk=iphoneos*]": "YES"
+          "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": ""
+          "PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]": com.alexschumacher.Wordsword.dev
   WordswordUITests:
     type: bundle.ui-testing
     platform: iOS
