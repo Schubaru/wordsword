@@ -215,6 +215,7 @@ struct DefineView: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .scrollClipDisabled()   // the chips' shadows would otherwise be cut flat at the row's top and bottom
             .disabled(busy || current == nil)
             .opacity(current == nil ? 0.5 : 1)
 
@@ -251,7 +252,15 @@ struct DefineView: View {
         Button { Task { await action() } } label: {
             Text(title).font(.footnote.weight(.semibold)).foregroundStyle(Color.pen)
                 .padding(.horizontal, 14).frame(minHeight: 40)
-                .background(Color.penWash, in: Capsule())
+                .background {
+                    // Frosted sheet: the definition scrolls under the dock, so the chip is nearly opaque
+                    // over a blur rather than a see-through wash.
+                    Capsule().fill(.ultraThinMaterial)
+                        .overlay { Capsule().fill(Color.sheet.opacity(0.9)) }
+                        .overlay { Capsule().strokeBorder(Color.rule, lineWidth: 1) }
+                        .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
+                        .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                }
         }
         .buttonStyle(PressStyle())
     }
