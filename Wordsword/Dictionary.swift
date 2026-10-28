@@ -77,6 +77,28 @@ enum Dictionary {
         await datamuse("rel_syn=\(word)&max=12").map(\.word)
     }
 
+    /// The rarest of these words, with its first sense trimmed to one clause — the word a
+    /// definition hinges on ("ulna" inside "of or pertaining to the ulna"). Nil when they're all everyday words.
+    static func rarestGloss(in words: [String]) async -> (word: String, sense: String)? {
+        await withTaskGroup(of: (word: String, f: Double, sense: String)?.self) { g in
+            for w in words {
+                g.addTask {
+                    guard let hit = await datamuse("sp=\(w)&md=df&max=1").first, hit.word == w,
+                          let def = hit.defs?.first?.split(separator: "\t", maxSplits: 1).last,
+                          let f = hit.tags?.first(where: { $0.hasPrefix("f:") }).flatMap({ Double($0.dropFirst(2)) }),
+                          f < 5 else { return nil }   // ponytail: f = uses per million; under 5 is "you might not know this one"
+                    var s = stripLabel(String(def).trimmingCharacters(in: .whitespaces))
+                    if let r = s.range(of: ". ") { s = String(s[..<r.lowerBound]) }
+                    if s.count > 90, let r = s.range(of: ", ") { s = String(s[..<r.lowerBound]) }
+                    return (w, f, s.trimmingCharacters(in: CharacterSet(charactersIn: " .")) + ".")
+                }
+            }
+            var best: (word: String, f: Double, sense: String)?
+            for await r in g { if let r, r.f < best?.f ?? .infinity { best = r } }
+            return best.map { ($0.word, $0.sense) }
+        }
+    }
+
     private static let staleLabels = ["(obsolete", "(archaic", "(dated", "(rare"]
 
     private static func datamuseDefinition(_ word: String) async -> Definition? {
