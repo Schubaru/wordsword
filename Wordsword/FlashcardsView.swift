@@ -15,14 +15,10 @@ struct FlashcardsView: View {
     @State private var total = 0
     @State private var slide: CGFloat = 0
     @State private var reaction: KnightPose = .idle   // cheer / slump right after an answer, then back to idle
-    @Environment(Auth.self) private var auth
-    @State private var showAccount = false
 
     var body: some View {
         VStack(spacing: 24) {
-            if !auth.isSignedIn {
-                locked
-            } else if deck.isEmpty {
+            if deck.isEmpty {
                 VStack(spacing: 12) {
                     KnightDoodle(pose: .idle, color: .ink, accent: .pen).frame(width: 96, height: 96)
                     Text("Nothing to practice yet").font(.title3.weight(.semibold)).foregroundStyle(Color.ink)
@@ -52,31 +48,12 @@ struct FlashcardsView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paperScreen("Flashcards")
-        .sheet(isPresented: $showAccount) { AccountFlow { showAccount = false } }
         .onAppear(perform: build)
         #if DEBUG
         .onChange(of: router.debug) { _, d in if d == "flip" { flipped = true } }
         #endif
     }
     @Environment(Router.self) private var router
-
-    /// The account gate. Not a locked door — this is the best moment in the app to explain what an
-    /// account is for, because the user is already reaching for the thing it unlocks.
-    private var locked: some View {
-        VStack(spacing: 14) {
-            KnightDoodle(pose: .idle, color: .ink, accent: .pen).frame(width: 96, height: 96)
-            Text("Flashcards need an account")
-                .font(.title3.weight(.semibold)).foregroundStyle(Color.ink)
-                .multilineTextAlignment(.center)
-            Text("They're how your words come back right before you'd forget them. Takes about twenty seconds, and every word you've saved stays exactly where it is.")
-                .font(.body).foregroundStyle(Color.ink2).multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Create an account or sign in") { showAccount = true }
-                .buttonStyle(CTAStyle())
-                .padding(.top, 8)
-        }
-        .padding(.horizontal, 8)
-    }
 
     private func build() {
         let pool: [Word]

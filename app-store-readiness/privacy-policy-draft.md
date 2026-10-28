@@ -66,7 +66,7 @@ Words already saved to your library are defined from your device and are not re-
 
 ### 4. Voice input
 
-If you hold the search field to speak a word, wordsword uses Apple's speech recognition to turn
+If you tap the mic in the search field to speak a word, wordsword uses Apple's speech recognition to turn
 your speech into text.
 
 **Where this happens depends on your device.** On devices that support on-device speech
@@ -74,7 +74,7 @@ recognition, the audio never leaves your iPhone. On devices that do not, **the r
 sent to Apple** for transcription, and Apple's privacy policy governs that processing. wordsword
 requests on-device recognition whenever your device is capable of it.
 
-The microphone is used only while you are actively holding the control. Audio is used only to
+The microphone is used only after you tap the mic, and stops when you stop talking or tap it again. Audio is used only to
 produce the word you are searching for. We never store recordings, and we never transmit audio to
 anyone other than Apple's speech recognition service as described above.
 

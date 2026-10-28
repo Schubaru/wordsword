@@ -3,7 +3,6 @@ import SwiftData
 
 struct LibraryView: View {
     @Environment(Router.self) private var router
-    @Environment(Auth.self) private var auth
     @Environment(\.modelContext) private var context
     @Query(sort: \Word.lastLookedUp, order: .reverse) private var words: [Word]
     @Query(sort: \Wordlist.createdAt, order: .reverse) private var lists: [Wordlist]
@@ -14,10 +13,9 @@ struct LibraryView: View {
     private var due: Int { words.filter { $0.dueAt <= Date() }.count }
 
     /// Says the state of the row before you tap it, so the gate and the empty screen are never a
-    /// surprise: no account → the ask, no words → the reason, otherwise what's waiting.
+    /// surprise: no words → the reason, otherwise what's waiting.
     private var flashcardsDetail: String {
-        if !auth.isSignedIn { "needs an account" }
-        else if words.isEmpty { "no words yet" }
+        if words.isEmpty { "no words yet" }
         else if due > 0 { "\(due) due" }
         else { "practice" }
     }

@@ -4,9 +4,8 @@ import SwiftUI
 /// Choose → Sign in with Apple → name yourself.
 ///
 /// Used in two places with the same code: as the last step of onboarding (where the quiet third
-/// option is "Maybe later"), and as a sheet from Settings or the flashcards gate (where it's
-/// "Cancel"). One implementation means the sign-up you get from the flashcards prompt is the same
-/// one you'd have got on day one.
+/// option is "Maybe later"), and as a sheet from Settings (where it's "Cancel"). One
+/// implementation means the sign-up you get later is the same one you'd have got on day one.
 struct AccountFlow: View {
     /// Title for the quiet opt-out on the choice screen. Nil in a sheet, which gets Cancel instead.
     var laterTitle: String?
@@ -86,27 +85,17 @@ struct AccountFlow: View {
                 .frame(width: 84, height: 84)
                 .padding(.bottom, 18)
 
-            // No antecedent problem: two of the three ways in (Settings row, flashcards gate) give
-            // "them" nothing to point at. This also leads with the thing that works today —
-            // the old headline sold backup, which the footnote two lines down takes back.
-            Text("Make your words stick.")
+            // Says only what's true today. Everything works signed out, flashcards included, so
+            // the account is just a name; a list of perks here would sell backup and sync that
+            // don't exist (App Store 2.1(a), and the 2026-10-22 readiness audit).
+            Text("Make it yours.")
                 .font(.system(.title, design: .rounded).weight(.bold))
                 .foregroundStyle(Color.ink)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 16)
+                .padding(.bottom, 12)
 
-            VStack(alignment: .leading, spacing: 10) {
-                perk("Flashcards, and word games later")
-                perk("Your words, backed up")
-                perk("The same words on every device")
-                perk("A username that's yours")
-            }
-            .padding(.bottom, 12)
-
-            // The account is real; the sync behind it isn't yet. Saying so here is cheaper than
-            // someone trusting a backup that doesn't exist.
-            Text("Flashcards work right now. Backup and sync land in a later update — today your words live on this phone.")
-                .font(.footnote).foregroundStyle(Color.ink2)
+            Text("Sign in with Apple and pick a username. Everything works without an account, and your words stay on this phone either way.")
+                .font(.body).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 28)
 
@@ -146,16 +135,6 @@ struct AccountFlow: View {
         .padding(.bottom, 32)
     }
 
-    private func perk(_ s: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Image(systemName: "checkmark")
-                .font(.footnote.weight(.bold)).foregroundStyle(Color.pen)
-            Text(s).font(.body).foregroundStyle(Color.ink)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
     private static let failed = "Couldn't reach Apple. Check your connection and try again."
 
     private func finish(_ result: Result<ASAuthorization, Error>) {
@@ -193,7 +172,7 @@ struct AccountFlow: View {
                 .foregroundStyle(Color.ink)
                 .padding(.bottom, 8)
 
-            Text("Just how the app says hi. You can change it any time in Settings.")
+            Text("It shows in Settings, and you can change it there any time.")
                 .font(.subheadline).foregroundStyle(Color.ink2)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 20)

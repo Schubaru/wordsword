@@ -33,7 +33,7 @@ struct SettingsView: View {
                     // means nothing to a person, so it's never shown.
                     LabeledContent("Signed in with", value: "Apple")
                         .sheetRow(.middle)
-                    // Signing out locks flashcards until you sign back in. Worth one tap of confirming.
+                    // Cheap to undo, but a red button still earns one tap of confirming.
                     Button { confirmSignOut = true } label: {
                         Text("Sign out").foregroundStyle(Color.pen)
                     }
@@ -58,7 +58,7 @@ struct SettingsView: View {
                      // Covers both buttons above it. Saying only "signing out" while a red
                      // Delete account sits alongside invites the reader to assume the opposite.
                      ? "Signing out or deleting your account keeps every word on this phone."
-                     : "No account yet — your words are saved on this phone. An account adds flashcards, and backup once sync ships.")
+                     : "No account yet. Everything works without one, and your words are saved on this phone.")
                 .sheetSectionLabel()
             }
             Section {
@@ -77,7 +77,7 @@ struct SettingsView: View {
                 .sheetRowButton(.last)
             }
             Section {
-                Text("Definitions from the Free Dictionary API (dictionaryapi.dev). Spelling help and extra synonyms from Datamuse.")
+                Text("Definitions from the Free Dictionary API (dictionaryapi.dev). Spelling help and extra synonyms from Datamuse. Word Wheel's words from ENABLE and Alan Beale's 12dicts.")
                     .font(.footnote).foregroundStyle(Color.ink2)
                     .sheetRow(.first)
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
@@ -94,7 +94,7 @@ struct SettingsView: View {
         .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
             Button("Sign out", role: .destructive) { auth.signOut() }
         } message: {
-            Text("Every word stays on this phone. Flashcards lock until you sign back in.")
+            Text("Every word stays on this phone.")
         }
         // Names what survives, not just what goes: the fear this dialog has to answer is "am I
         // about to lose my library", and the answer is no.

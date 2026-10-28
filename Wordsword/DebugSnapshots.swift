@@ -54,10 +54,10 @@ enum DebugSnapshots {
             router.debug = "acct:name";  await snap("07-username")
             router.debug = "acct:choice"
 
-            // --- signed out: the app still works, flashcards ask for an account ---
+            // --- signed out: the whole app works, flashcards included ---
             auth.hasSeenStory = true
             router.path = []; await snap("10-home-empty")
-            router.path = [.library, .flashcards(nil)]; await snap("11-flashcards-locked")
+            router.path = [.library, .flashcards(nil)]; await snap("11-flashcards-signed-out")
 
             // --- signed in: the rest of the app ---
             auth.debugSignIn()
