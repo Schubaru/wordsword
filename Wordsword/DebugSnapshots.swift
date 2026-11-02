@@ -38,6 +38,32 @@ enum DebugSnapshots {
             return
         }
 
+        // App Store run: the listing's frames, with long enough waits for each reply to land. Run the
+        // full tour first so the library has words in it; launch with WHEEL_POSE=1 LINKING_POSE=2 too.
+        if ProcessInfo.processInfo.environment["STORE_SHOTS"] != nil {
+            Task { @MainActor in
+                auth.hasSeenStory = true
+                auth.debugSignIn()
+                // Fresh lookups go to the top of All words, so the list opens on these.
+                for w in ["mellifluous", "ephemeral", "serendipity", "ineffable", "wistful", "luminous", "candor"] {
+                    router.path = [.define(w)]; try? await Task.sleep(for: .seconds(5))
+                }
+                router.path = []; await snap("s-home", after: 2.5)
+                // The on-device model's first replies take 10s+ in the simulator.
+                router.path = [.define("sanguine")]; try? await Task.sleep(for: .seconds(5))
+                // One simulator at a time: two booted sims sharing the host's model starve each other.
+                router.debug = "sentence"; await snap("s-sentence", after: 20)
+                router.debug = "follow:optimistic"; await snap("s-chain", after: 6)
+                router.path = [.library, .wordlist(nil)]; await snap("s-all-words", after: 2)
+                router.path = [.library, .flashcards(nil)]; try? await Task.sleep(for: .seconds(1.5))
+                router.debug = "flip"; await snap("s-flashcard", after: 1.5)
+                router.path = [.games, .wordWheel]; await snap("s-word-wheel", after: 2.5)
+                router.path = [.linkingWords]; await snap("s-linking-words", after: 3)
+                print("SHOTS DONE")
+            }
+            return
+        }
+
         Task { @MainActor in
             // --- first run: splash → story → account ---
             auth.signOut()

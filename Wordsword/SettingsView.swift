@@ -80,6 +80,10 @@ struct SettingsView: View {
                 Text("Definitions from the Free Dictionary API (dictionaryapi.dev). Spelling help and extra synonyms from Datamuse. Word Wheel's words from ENABLE and Alan Beale's 12dicts.")
                     .font(.footnote).foregroundStyle(Color.ink2)
                     .sheetRow(.first)
+                Link(destination: URL(string: "https://schubaru.github.io/wordsword/privacy.html")!) {
+                    Text("Privacy policy").foregroundStyle(Color.pen)
+                }
+                .sheetRowButton(.middle)
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                     .sheetRow(.last)
             } header: {
