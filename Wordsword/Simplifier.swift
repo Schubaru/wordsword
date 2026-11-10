@@ -7,10 +7,40 @@ import FoundationModels
 /// one plain sentence, no jargon, never defines the word with itself.
 /// Uses Apple's on-device model when the toolchain/device has it; otherwise honest heuristics.
 enum Simplifier {
+    /// Dictionary first. The on-device model once turned cleft's "An opening, fissure, or V-shaped
+    /// indentation…" into "A crack is an opening…" — it defined the synonym. So the dictionary's own
+    /// wording, tidied, is the headline; the model only rewrites a sense too long to take in at a
+    /// glance, and its reply is shown only if it `passes`.
+    static let rewriteOver = 100
+
     static func simplify(_ d: Definition) async -> String {
-        if let s = await ask("Rewrite this dictionary definition of \"\(d.word)\" (\(d.partOfSpeech)) as ONE plain-English sentence a smart 16-year-old would get instantly. Do not use the word itself. Reply with only the sentence.\n\nDefinition: \(d.senses.first ?? "")") { return s }
-        return heuristic(d.senses.first ?? "")
+        let plain = heuristic(d.senses.first ?? "")
+        guard plain.count > rewriteOver,
+              let s = await ask("Rewrite this dictionary definition of \"\(d.word)\" (\(d.partOfSpeech)) as ONE plain-English sentence a smart 16-year-old would get instantly. Start with the meaning itself, not with another word followed by \"is\". Do not use the word itself. Reply with only the sentence.\n\nDefinition: \(d.senses.first ?? "")"),
+              passes(s, for: d.word) else { return plain }
+        return s
     }
+
+    /// A model one-liner we'll show: one short sentence about this word. Not one that names another
+    /// word as its subject ("A crack is…"), says the word itself, or talks about the request.
+    static func passes(_ s: String, for word: String) -> Bool {
+        let lower = s.lowercased()
+        guard (8...160).contains(s.count),
+              !lower.split(whereSeparator: { !$0.isLetter }).contains(Substring(word)),
+              !lower.hasPrefix("here"), !lower.hasPrefix("sure") else { return false }
+        if let m = lower.firstMatch(of: #/^(?:(?:a|an|the)\s+)?([a-z-]+)\s+(?:is|are|means|refers)\b/#),
+           !["it", "this", "that", "someone", "something", "anyone", "anything", "when", "what"].contains(String(m.1)) { return false }
+        return true
+    }
+
+    #if DEBUG
+    static func selfCheck() {
+        assert(!passes("A crack is an opening or indentation that is made by splitting or cracking.", for: "cleft"))
+        assert(!passes("Cleft means split in two.", for: "cleft"))
+        assert(passes("A long, narrow opening made by splitting something.", for: "cleft"))
+        assert(passes("It means feeling hopeful that things will go well.", for: "sanguine"))
+    }
+    #endif
 
     /// Not a simpler version — a different way in. Each tap takes a new angle; once they're used up,
     /// the dictionary's own wording, then round again.
@@ -130,8 +160,17 @@ enum Simplifier {
         #if canImport(FoundationModels)
         if #available(iOS 26, *) {
             guard SystemLanguageModel.default.isAvailable else { return nil }
-            let session = LanguageModelSession(instructions: "You are wordsword, a sharp friend who explains words in plain English. Be brief. Never use markdown.")
-            return try? await session.respond(to: prompt).content.trimmingCharacters(in: .whitespacesAndNewlines)
+            // A reply that hasn't landed in 8s isn't coming in time to help; nil lets the fallbacks answer.
+            return await withTaskGroup(of: String?.self) { g in
+                g.addTask {
+                    let session = LanguageModelSession(instructions: "You are wordsword, a sharp friend who explains words in plain English. Be brief. Never use markdown.")
+                    return try? await session.respond(to: prompt).content.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                g.addTask { try? await Task.sleep(for: .seconds(8)); return nil }
+                let first = await g.next() ?? nil
+                g.cancelAll()
+                return first
+            }
         }
         #endif
         return nil

@@ -34,6 +34,7 @@ struct WordswordApp: App {
             }
             #if DEBUG
             .task { Auth.selfCheck() }
+            .task { Dictionary.selfCheck(); Simplifier.selfCheck() }
             .task { await Task.detached { Level.selfCheck() }.value }
             .task { await Task.detached { LinkingPuzzle.selfCheck() }.value }
             // `SIMCTL_CHILD_OPEN_ROUTE=wordWheel simctl launch …` lands on a screen for screenshots.
@@ -41,9 +42,9 @@ struct WordswordApp: App {
             .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "linkingWords" { router.path = [.linkingWords] } }
             .task { await Task.detached { PlexiconWords.selfCheck() }.value }
             .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "plexicon" { router.path = [.plexicon] } }
-            .task { DebugSnapshots.runIfRequested(router, auth) }
             .task { await Task.detached { HaikuzyBank.selfCheck() }.value }
             .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "haikuzy" { router.path = [.haikuzy] } }
+            .task { DebugSnapshots.runIfRequested(router, auth) }
             #endif
             // wordsword://define            → focus the input (future widget)
             // wordsword://define?word=halcyon → straight into the chat
@@ -70,8 +71,8 @@ enum Route: Hashable {
     case wordWheel
     case linkingWords
     case plexicon
-    case wordsFound
     case haikuzy
+    case wordsFound
 }
 
 @Observable final class Router {

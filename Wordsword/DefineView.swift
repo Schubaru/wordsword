@@ -282,11 +282,17 @@ struct DefineView: View {
         // Already in the library → instant & offline.
         if let w = Word.find(text, in: context) {
             w.lastLookedUp = Date(); w.lookupCount += 1
-            // Saved before pronunciation existed: fetch it once, capped at 2s so a slow or absent
-            // network can't delay a word that's supposed to open instantly.
-            if w.respelling == nil, let p = await Dictionary.pronunciation(for: text) {
-                w.addTag("pron", p.respelling, in: context)
-                if let a = p.audio { w.addTag("audio", a.absoluteString, in: context) }
+            // Saved before pronunciation or ranked synonyms existed: fetch them once, capped at 2s so a
+            // slow or absent network can't delay a word that's supposed to open instantly.
+            w.repairHeadline()
+            if w.respelling == nil || !w.hasRankedSynonyms, let fresh = await Dictionary.refresh(text) {
+                if w.respelling == nil, let r = fresh.respelling {
+                    w.addTag("pron", r, in: context)
+                    if let a = fresh.audio { w.addTag("audio", a.absoluteString, in: context) }
+                }
+                if !w.hasRankedSynonyms, fresh.partOfSpeech == w.partOfSpeech {
+                    w.setSynonyms(Array(fresh.synonyms.prefix(12)), in: context)
+                }
             }
             let d = Definition(word: w.text, partOfSpeech: w.partOfSpeech, senses: [w.rawDefinition],
                                example: w.example, synonyms: w.synonyms,
@@ -304,7 +310,7 @@ struct DefineView: View {
             w.addTag("pos", d.partOfSpeech, in: context)
             if let r = d.respelling { w.addTag("pron", r, in: context) }
             if let a = d.audio { w.addTag("audio", a.absoluteString, in: context) }
-            for s in d.synonyms.prefix(12) { w.addTag("synonym", s, in: context) }
+            w.setSynonyms(Array(d.synonyms.prefix(12)), in: context)
             finish(d, w)
         case .suggestions(let s):
             dropLoading(); append(.didYouMean(s))
@@ -344,17 +350,10 @@ struct DefineView: View {
     }
 
     private func moreSynonyms() async {
-        guard let d = current, let w = currentWord else { return }
-        append(.user("More synonyms")); busy = true
-        var pool = d.synonyms
-        if pool.count <= synonymsShown {
-            let extra = await Dictionary.synonyms(for: d.word).filter { !pool.contains($0) && $0 != d.word }
-            pool += extra
-            for s in extra { w.addTag("synonym", s, in: context) }
-            current?.synonyms = pool
-        }
-        busy = false
-        let next = Array(pool.dropFirst(synonymsShown).prefix(6))
+        // The ranked list is the whole pool: anything Datamuse has past it belongs to another sense.
+        guard let d = current else { return }
+        append(.user("More synonyms"))
+        let next = Array(d.synonyms.dropFirst(synonymsShown).prefix(6))
         if next.isEmpty { append(.end("That's everything I've got for \(d.word)")); return }
         synonymsShown += next.count
         append(.synonyms(next))   // tappable, so the chain can keep going

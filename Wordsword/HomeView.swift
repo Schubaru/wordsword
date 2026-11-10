@@ -151,6 +151,7 @@ struct HomeView: View {
         // comes up — so wait out the splash's reveal first. Same reason as AccountFlow's step focus.
         .task {
             trail = LastSearch.chain
+            for w in words { w.repairHeadline() }   // local and instant: library and flashcards read this line too
             try? await Task.sleep(for: .milliseconds(380))
             guard !Task.isCancelled else { return }
             router.focusInput = false      // a deep link that landed before Home existed is satisfied here

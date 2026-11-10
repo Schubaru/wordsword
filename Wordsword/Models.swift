@@ -35,7 +35,26 @@ import SwiftData
     /// Tags are the extensible metadata system. `kind` is an open string:
     /// "pos", "synonym" today; "antonym", "origin", "book" tomorrow — no schema change.
     func tags(_ kind: String) -> [String] { tags.filter { $0.kind == kind }.map(\.value) }
-    var synonyms: [String] { tags("synonym") }
+    /// Ranked best-first, kept as one "a|b|c" tag: a to-many relationship doesn't keep its order.
+    /// Words saved before ranking (2026-11-10) fall back to their old unordered "synonym" tags.
+    var synonyms: [String] {
+        tags("synonyms").first.map { $0.split(separator: "|").map(String.init) } ?? tags("synonym")
+    }
+    var hasRankedSynonyms: Bool { !tags("synonyms").isEmpty }
+    func setSynonyms(_ s: [String], in context: ModelContext) {
+        tags.removeAll { $0.kind == "synonyms" }
+        addTag("synonyms", s.joined(separator: "|"), in: context)
+    }
+
+    /// The headline went dictionary-first on 2026-11-10. A line saved under the old rule is put back
+    /// to the dictionary's wording unless it was a long sense's rewrite that still passes the check.
+    func repairHeadline() {
+        guard !rawDefinition.isEmpty else { return }
+        let plain = Simplifier.heuristic(rawDefinition)
+        if definition != plain, plain.count <= Simplifier.rewriteOver || !Simplifier.passes(definition, for: text) {
+            definition = plain
+        }
+    }
     /// Pronunciation rides the tag system rather than new columns — no schema change, no migration.
     var respelling: String? { tags("pron").first }
     var audioURL: URL? { tags("audio").first.flatMap(URL.init(string:)) }
