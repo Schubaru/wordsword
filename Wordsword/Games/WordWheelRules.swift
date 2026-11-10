@@ -20,7 +20,7 @@ enum WordWheelRules {
     static func targetRange(letters: Int) -> ClosedRange<Int> {
         switch letters { case 4: 3...5; case 5: 5...7; case 6: 6...9; default: 7...12 }
     }
-    /// Wordscapes level 1 is CAT / ACT: two words is a board.
+    /// The smallest board is two words, like CAT / ACT.
     static let minTargets = 2
     static let maxGrid = 10
 

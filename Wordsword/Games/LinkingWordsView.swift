@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Today's Linking words: sixteen word tiles on the paper, four groups to find, four strikes.
 /// The game lives in `LinkingWords`; this screen draws it and reacts to it. A solved group becomes
-/// a strip with a highlighter swept across it — the one colour on the page, and it marks a find.
+/// a strip with a highlighter swept across it — the one colour on the page, and it marks a find —
+/// and says what its headword means.
 struct LinkingWordsView: View {
     @Environment(Router.self) private var router
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -260,8 +261,8 @@ struct LinkingWordsView: View {
     }
 }
 
-extension LinkTier {
-    /// The highlighter for this tier.
+extension LinkInk {
+    /// The highlighter itself.
     var color: Color {
         switch self { case .yellow: .highlighter; case .green: .highlighterGreen; case .blue: .highlighterBlue; case .pink: .highlighterPink }
     }
@@ -307,14 +308,17 @@ private struct WordTile: View {
     }
 }
 
-/// A found group: a strip of paper with the tier's highlighter swept across it, the headword on top
-/// and the four words under it. Every word on it opens its definition.
+/// A found group: a strip of paper with today's highlighter for it swept across it, the headword on
+/// top, the four words under it, and the headword's one-line meaning last — the link the player just
+/// made, said plainly. The meaning is the app's own sentence, fetched once and kept; offline the line
+/// is left out. Every word on it opens its definition.
 private struct SolvedStrip: View {
     let group: LinkingPuzzle.Group
     let drawn: Bool
     let define: (String) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sweep: CGFloat = 0
+    @State private var meaning: String?
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -329,6 +333,14 @@ private struct SolvedStrip: View {
                 HStack(spacing: 0) { wordLinks(separator: ", ") }
                 VStack(spacing: 2) { wordLinks(separator: "") }
             }
+            if let meaning {
+                Text(meaning)
+                    .font(.footnote).fontDesign(.serif).foregroundStyle(Color.ink)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.top, 2)
+                    .transition(.opacity)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 14).padding(.vertical, 10)
@@ -336,14 +348,18 @@ private struct SolvedStrip: View {
             ZStack {
                 shape.fill(Color.sheet)
                 shape.strokeBorder(Color.rule, lineWidth: 1)
-                HighlighterSwipe(color: group.tier.color, progress: sweep)
+                HighlighterSwipe(color: group.ink.color, progress: sweep)
             }
         }
         .onAppear {
             if drawn || reduceMotion { sweep = 1 } else { withAnimation(Motion.slash) { sweep = 1 } }
         }
+        .task(id: group.headword) {
+            let m = await WordOfTheDay.meaning(of: group.headword.lowercased())
+            withAnimation(reduceMotion ? nil : Motion.state) { meaning = m }
+        }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(group.tier.name) group, \(group.headword): \(group.words.joined(separator: ", "))")
+        .accessibilityLabel("\(group.headword): \(group.words.joined(separator: ", "))" + (meaning.map { ". \($0)" } ?? ""))
     }
 
     @ViewBuilder private func wordLinks(separator: String) -> some View {
@@ -364,7 +380,7 @@ private struct SolvedStrip: View {
 /// rather than filling the paper — a band about three-quarters of the strip tall, soft where the
 /// marker touched down and where it lifted, running a little past the strip's edges, a hair off
 /// level. In light mode it multiplies over the page, so the ink and the sheet show through the way
-/// they do under a real marker; dark paper has no highlighter, so there the tier colour just sits
+/// they do under a real marker; dark paper has no highlighter, so there the ink just sits
 /// at half strength. `progress` 0…1 draws it.
 struct HighlighterSwipe: View {
     let color: Color
@@ -451,7 +467,7 @@ private struct TallyStrike: Shape {
     }
 }
 
-/// Completed · Win % · Current streak · Max streak, between two ruled hairlines — the notebook's
+/// Days · Solved · Streak · Best, between two ruled hairlines — the notebook's
 /// own lines. Four across, labels wrapping to two lines; two by two at accessibility sizes.
 private struct StatsRow: View {
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -460,8 +476,8 @@ private struct StatsRow: View {
     let best: Int
 
     private var items: [(value: String, label: String)] {
-        [("\(stats.played)", "Completed"), ("\(stats.winPercent)", "Win %"),
-         ("\(streak)", "Current streak"), ("\(best)", "Max streak")]
+        [("\(stats.played)", "Days"), ("\(stats.won)", "Solved"),
+         ("\(streak)", "Streak"), ("\(best)", "Best")]
     }
 
     var body: some View {
@@ -498,16 +514,23 @@ private struct StatsRow: View {
     }
 }
 
-/// The guesses as rows of highlighter squares — what gets shared, drawn in the real colours.
+/// The guesses as rows of shapes — what gets shared: each ink's symbol, filled with its highlighter
+/// and outlined in ink so the yellow holds its edge on white.
 private struct ShareGrid: View {
-    let rows: [[LinkTier]]
+    let rows: [[LinkInk]]
+    @ScaledMetric(relativeTo: .body) private var size: CGFloat = 17
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                HStack(spacing: 4) {
-                    ForEach(Array(row.enumerated()), id: \.offset) { _, t in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous).fill(t.color).frame(width: 20, height: 20)
+                HStack(spacing: 8) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, ink in
+                        ZStack {
+                            Image(systemName: ink.glyph + ".fill").foregroundStyle(ink.color)
+                            Image(systemName: ink.glyph).foregroundStyle(Color.ink)
+                        }
+                        .font(.system(size: size))
+                        .frame(width: size + 6, height: size + 6)
                     }
                 }
             }
@@ -517,34 +540,28 @@ private struct ShareGrid: View {
     }
 }
 
+extension LinkInk {
+    /// The SF Symbol matching `symbol` in the share text.
+    var glyph: String {
+        switch self { case .yellow: "circle"; case .green: "triangle"; case .blue: "square"; case .pink: "diamond" }
+    }
+}
+
 /// How to play, in three lines and one example strip. Shown once on first open, and from the `?`.
 struct HowToPlaySheet: View {
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .body) private var rule: CGFloat = 28
-    private let example = LinkingPuzzle.Group(tier: .yellow, headword: "HAPPY", words: ["glad", "cheerful", "merry", "upbeat"])
+    private let example = LinkingPuzzle.Group(tier: .everyday, ink: .yellow, headword: "HAPPY", words: ["glad", "cheerful", "merry", "upbeat"])
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 line("Sixteen words. Four groups of four that mean the same thing.")
-                line("Tap four words. The fourth tap is the guess: a right group gets highlighted and named.")
+                line("Tap four words. The fourth tap is the guess: a right group gets highlighted, named, and explained.")
                 line("Four mistakes and the board shows itself. A new one every midnight.")
                 SolvedStrip(group: example, drawn: true) { _ in }
                     .padding(.top, 10)
                     .accessibilityHidden(true)
-                HStack(spacing: 14) {
-                    ForEach(LinkTier.allCases, id: \.self) { t in
-                        HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 4, style: .continuous).fill(t.color).frame(width: 14, height: 14)
-                            Text(t == .yellow ? "easiest" : t == .pink ? "trickiest" : " ")
-                                .font(.pron).foregroundStyle(Color.ink2)
-                        }
-                    }
-                }
-                .padding(.top, 8)
-                .onRule(spacing: rule)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Groups go from yellow, the easiest, through green and blue to pink, the trickiest")
             }
             .padding(.horizontal, 20)
             .frame(maxWidth: .infinity, alignment: .leading)

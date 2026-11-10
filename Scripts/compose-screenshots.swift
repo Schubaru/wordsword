@@ -10,7 +10,7 @@ let panels: [(raw: String, name: String, headline: String)] = [   // |…| marks
     ("s-all-words",     "03-library",       "Every word you\nlook up, |kept|"),
     ("s-chain",         "04-chain",         "Follow one word\n|to the next|"),
     ("s-flashcard",     "05-flashcards",    "Flashcards that\n|make it stick|"),
-    ("s-plexicon",      "06-plexicon",      "Five letters,\n|six tries|"),
+    ("s-plexicon",      "06-plexicon",      "One word a day,\nand |what it means|"),
     ("s-linking-words", "07-linking-words", "A fresh |puzzle|\nevery day"),
     ("s-word-wheel",    "08-word-wheel",    "Spell words,\n|level after level|"),
     ("s-home",          "09-home",          "Four |word games|,\none search away"),

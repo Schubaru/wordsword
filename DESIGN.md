@@ -17,10 +17,10 @@ Platform: iOS (SwiftUI). Follows system light/dark. Liquid Glass (`.glassEffect`
 | pen | #000000 | #FFFFFF | Primary: actions, selection, current token, focus |
 | on-pen | #FFFFFF | #0B1220 | Text on a pen-filled control |
 | pen-wash | pen @ 10% | | Tinted surfaces: earlier tokens, follow-up chips |
-| highlighter | #FFE244 | #D6B529 @ 50% | Yellow, the first of four highlighters: the easiest group in Linking words. Only ever marks a solved group there (the headword swipe was removed — it fought the word for legibility) |
-| highlighter-green | #B7F0A2 | #6FB04A @ 50% | Linking words' second tier |
-| highlighter-blue | #A6DCFF | #4A9BE0 @ 50% | Linking words' third tier |
-| highlighter-pink | #FFB7DC | #D05C9A @ 50% | Linking words' trickiest tier, and Haikuzy's one mark: the hidden word, found. All four sit at half strength in dark so `ink` on them stays past 4.5:1 |
+| highlighter | #FFE244 | #D6B529 @ 50% | Yellow, one of Linking words' four inks. Only ever marks a solved group there (the headword swipe was removed — it fought the word for legibility) |
+| highlighter-green | #B7F0A2 | #6FB04A @ 50% | Linking words' second ink |
+| highlighter-blue | #A6DCFF | #4A9BE0 @ 50% | Linking words' third ink |
+| highlighter-pink | #FFB7DC | #D05C9A @ 50% | Linking words' fourth ink, and Haikuzy's one mark: the hidden word, found. All four sit at half strength in dark so `ink` on them stays past 4.5:1. **The four inks never encode difficulty**: each day deals them to its groups in a seeded order (`LinkInk`) |
 | rule | #DADEE5 | #1C1F24 | Hairline dividers, and the edge on sheets and cards |
 | edge | #C3C8D1 | #343B48 | The outline on list cards (Library, wordlists, Settings): a step darker than `rule` so white rows read off the white paper |
 | shadow | black @ 10% | | Sheet lift (radius 24) |
@@ -229,7 +229,9 @@ four synonyms to find, four strikes, one puzzle a day for everyone.
   board's longest word so nothing looks shrunk beside its neighbours.
 - **A solved group is a strip** (`SolvedStrip`): a sheet (radius 14, 1pt `rule` edge) with the
   headword in rounded bold `.title3` over its four words in `.subheadline`, every one a button into
-  Define. The tier's highlighter (`HighlighterSwipe`) is swept across it: a band about 74% of the
+  Define, and last the headword's one-line meaning in serif `.footnote` `ink` (two lines at most;
+  `WordOfTheDay.meaning(of:)`, cached; left out offline). The group's ink for the day
+  (`HighlighterSwipe`) is swept across it: a band about 74% of the
   strip's height, soft at both ends (14pt in, 28pt out), running 10pt past the strip's edges, tilted
   -1.2°; multiply at 90% in light so ink and sheet show through, the half-strength token at full
   opacity in dark (dark paper has no highlighter). Strips already on the board when the screen opens
@@ -246,15 +248,16 @@ four synonyms to find, four strikes, one puzzle a day for everyone.
 - **Submit choreography:** the four picked tiles hop 8pt, 80ms apart (`Motion.feedback` up,
   `Motion.state` down); the guess lands 620ms after the tap. Right: the four move to the top row
   (`Motion.reveal`), and 380ms later the strip takes their place with the wipe. Wrong: the picked
-  tiles wobble ±6pt four times and a tally is struck; three of four shows "One away…", a repeat shows
+  tiles wobble ±6pt four times and a tally is struck; three of four shows "Three of those share a meaning", a repeat shows
   "Already guessed" (wobble ±2pt, no strike). Captions hold ~2.2s on the rule. The fourth strike
   says "Next time" and reveals the remaining groups 700ms apart, each by the same move-then-strip, then
   the results card comes up (600ms after a loss, 1s after a win).
 - **Results** (`results`) is a bottom overlay on a `sheetSurface` (top corners): the knight at 96pt
   (cheer when won), the verdict in `.headword` ("Clean sweep / Nicely done / Solid / Close one" by
-  mistakes, "Not today" when lost), the streak line in `.body` `ink-2`, the guesses as rows of 20pt
-  highlighter squares (`ShareGrid`), a filled `CTAStyle` `ShareLink` (text: "Linking words #N" and
-  the 🟨🟩🟦🟪 rows), and "Next puzzle in Nh Nm" counting down to local midnight. An `xmark` glass
+  mistakes, "Not today" when lost), the stats row (Days · Solved · Streak · Best), the guesses as
+  rows of shapes (`ShareGrid`: each ink's SF Symbol — circle, triangle, square, diamond — filled with
+  its highlighter and outlined in `ink`), a filled `CTAStyle` `ShareLink` (text: "Linking words #N"
+  and rows of ● ▲ ■ ◆), and "Next puzzle in Nh Nm" counting down to local midnight. An `xmark` glass
   icon, a flick down (60pt, or a 160pt projected end) or the VoiceOver escape puts it away to show
   the board; the "Results" pill brings it back.
 - **The streak counts solved days only** and is never shown as zero: a day missed just drops it
@@ -262,15 +265,16 @@ four synonyms to find, four strikes, one puzzle a day for everyone.
   The Home card's detail is "Today's puzzle" / "In progress" / "Solved" (each `· N-day streak` when
   there is one) or "Back tomorrow".
 - **How to play** (`HowToPlaySheet`) opens once on first launch (`rulesSeen`) and from the `?`: three
-  lines of `.body` on rules, one example strip (HAPPY), and the four swatches labelled easiest →
-  trickiest. Medium and large detents, `xmark` to close.
+  lines of `.body` on rules and one example strip (HAPPY). Nothing on it ranks the groups. Medium and large detents, `xmark` to close.
 - **Haptics:** `.selection` per pick, rigid on a solved group, warning on wrong or one away, soft on
   a repeat, success on the win. **Reduce Motion:** no hop, no wobble, strips appear drawn, the results
   card fades; captions and haptics stay. **VoiceOver:** every tile is labelled with its word and
-  selected state; a strip reads "Yellow group, HAPPY: glad, cheerful, …"; captions are announced.
+  selected state; a strip reads "HAPPY: glad, cheerful, …" and then its meaning; captions are announced.
 - **Puzzles are combined, not authored** — see `LinkingWordsPuzzles.swift`. The bank
-  (`linking-words.txt`) is one cluster per line, `y HAPPY: glad, cheerful, …`, in four tiers: yellow
-  everyday, green moderate, blue bookish, pink words that mean the headword only in a second sense.
+  (`linking-words.txt`) is one cluster per line, `1 HAPPY: glad, cheerful, …`, in four tiers: 1
+  everyday, 2 moderate, 3 bookish, 4 words that mean the headword only in a second sense. The tier
+  only balances a day (one cluster from each) and is never shown; the inks come from a second seeded
+  RNG, so dealing them never changes a day's words.
   Each tier's list is shuffled once by a fixed seed; day N takes cluster N (mod count) from each, and
   the four counts are kept pairwise coprime so the same four can't meet again for longer than the app
   will exist. Which four of a cluster's words play, and the board order, come from `SplitMix64`
@@ -281,6 +285,19 @@ four synonyms to find, four strikes, one puzzle a day for everyone.
   mistakes are replayed from its guesses.
 - **DEBUG env vars:** `OPEN_ROUTE=linkingWords` opens the game at launch; `LINKING_DAY=N` picks the
   puzzle; `LINKING_POSE=K` starts with K groups solved; `LINKING_CAPTION=S` holds captions S seconds.
+
+**Plexicon** (`PlexiconView`, logic in `Plexicon`): today's five-letter word in six guesses.
+
+- **The marks are the pen's, not colours** (`PenMark`): right spot is a hand-drawn ring round the
+  letter (one loop that overshoots its start), wrong spot a pen underline, not in the word a pen-wash
+  tile and an `ink-2` letter. Both strokes are `pen`, drawn with `.trim` on `Motion.slash`, staggered
+  across the row; keys carry the best mark their letter has earned.
+- **Results:** the verdict (First guess / Sharp / Nicely done / Solid / Close one / Just in time /
+  Not today), then the word in rounded bold `.title3` over its one-line meaning in serif
+  `.subheadline` `ink-2` (left out offline), Days · Solved · Streak · Best, "Guesses it took" bars,
+  "Look up “word”", Share (`Plexicon #N · got it on guess 3` and rows of ◉ ○ ·).
+- **Not Wordle's:** no green/yellow tiles, no coloured-square share grid, no "N/6", no Wordle stats
+  labels. Keep it that way.
 
 **Haikuzy — the featured game** (`HaikuzyView`, logic in `Haikuzy`, numbers in `HaikuzyRules`,
 progress in `HaikuzySave`, the poems in `haikuzy.txt`): one haiku a day with one word cut out of it;

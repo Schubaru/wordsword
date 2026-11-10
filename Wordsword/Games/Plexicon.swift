@@ -8,9 +8,9 @@ enum PlexMark: Int, Codable, Comparable, Sendable {
     case absent, present, correct
     static func < (a: PlexMark, b: PlexMark) -> Bool { a.rawValue < b.rawValue }
 
-    /// The square for the share text.
-    var square: String {
-        switch self { case .correct: "🟩"; case .present: "🟨"; case .absent: "⬜" }
+    /// The share text's symbol: the pen marks, as type — circled, open, nothing.
+    var symbol: String {
+        switch self { case .correct: "◉"; case .present: "○"; case .absent: "·" }
     }
     /// What VoiceOver says after the letter.
     var spoken: String {
@@ -151,7 +151,7 @@ struct PlexiconSave: Codable {
     nonisolated static let maxGuesses = 6
     /// Between one tile's highlighter and the next.
     nonisolated static let stagger = 0.22
-    static let hint = "Guess the five-letter word in six tries"
+    static let hint = "Find today's five-letter word"
 
     private(set) var save = PlexiconSave.load()
     private(set) var answer: String?
@@ -185,8 +185,8 @@ struct PlexiconSave: Codable {
     }
 
     var shareText: String {
-        let score = phase == .won ? "\(guesses.count)" : "X"
-        return "Plexicon #\(number) \(score)/\(Self.maxGuesses)\n" + guesses.map { marks($0).map(\.square).joined() }.joined(separator: "\n")
+        let how = phase == .won ? "got it on guess \(guesses.count)" : "not today"
+        return "Plexicon #\(number) · \(how)\n" + guesses.map { marks($0).map(\.symbol).joined(separator: " ") }.joined(separator: "\n")
     }
 
     var verdict: String {
@@ -197,7 +197,7 @@ struct PlexiconSave: Codable {
         case 3: return "Nicely done"
         case 4: return "Solid"
         case 5: return "Close one"
-        default: return "Phew"
+        default: return "Just in time"
         }
     }
 

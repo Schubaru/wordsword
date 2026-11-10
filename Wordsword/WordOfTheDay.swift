@@ -8,7 +8,8 @@ enum WordOfTheDay {
     }
 
     /// The one-line meaning written under the word on Home: wordsword's own sentence, the same one
-    /// Define would show. Fetched once per word and kept, so Home never waits on it twice.
+    /// Define would show. Fetched once per word and kept, so Home never waits on it twice. The games
+    /// use it too, for any word they end on (Plexicon's answer, Linking words' headwords).
     static func meaning(of word: String) async -> String? {
         if let kept = kept(word) { return kept }
         guard case .found(let d) = await Dictionary.lookup(word) else { return nil }

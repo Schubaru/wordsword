@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Today's Plexicon: six rows of five tiles on the paper and a keyboard under them. The game lives
-/// in `Plexicon`; this draws it and reacts. The marks are the app's highlighters — green across a
-/// letter in the right spot, a low yellow swipe under one in the wrong spot, a faded letter for one
-/// that isn't in the word — so the only colour on the page still means "found".
+/// in `Plexicon`; this draws it and reacts. The marks are the pen's — a ring round a letter in the
+/// right spot, an underline under one in the wrong spot, a faded letter for one that isn't in the
+/// word — shapes, not colours, so the board reads in ink alone.
 struct PlexiconView: View {
     @Environment(Router.self) private var router
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -20,6 +20,8 @@ struct PlexiconView: View {
     @State private var hopping: Set<Int> = []
     @State private var showResults = false
     @State private var showRules = false
+    /// Today's word in one plain sentence, for the results; nil offline.
+    @State private var meaning: String?
     @FocusState private var keysFocused: Bool
 
     private var keyHeight: CGFloat { min(keyBase, 64) }
@@ -216,6 +218,11 @@ struct PlexiconView: View {
         })
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape) { showResults = false }
+        .task(id: game.answer) {
+            guard let a = game.answer else { return }
+            let m = await WordOfTheDay.meaning(of: a)
+            withAnimation(reduceMotion ? nil : Motion.state) { meaning = m }
+        }
     }
 
     private var resultsBody: some View {
@@ -223,6 +230,20 @@ struct PlexiconView: View {
             KnightDoodle(pose: game.phase == .won ? .cheer : .idle, color: .ink, accent: .pen)
                 .frame(width: 96, height: 96)
             Text(game.verdict).font(.headword).foregroundStyle(Color.ink)
+            // The game ends where the app begins: the word, and what it means.
+            if let a = game.answer {
+                VStack(spacing: 4) {
+                    Text(a).font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(Color.ink)
+                    if let meaning {
+                        Text(meaning)
+                            .font(.subheadline).fontDesign(.serif).foregroundStyle(Color.ink2)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.bottom, 4)
+                .accessibilityElement(children: .combine)
+            }
             PlexStats(save: game.save, streak: game.streak)
             GuessBars(counts: game.save.distribution, today: game.phase == .won ? game.guesses.count : nil)
                 .padding(.bottom, 4)
@@ -307,8 +328,8 @@ struct PlexiconView: View {
 }
 
 // MARK: - Pieces
-/// One letter on the board: a small sheet. The mark draws in when the row is entered — a
-/// highlighter wipe for the found letters, a pen-wash and a faded letter for the ones that aren't
+/// One letter on the board: a small sheet. The mark draws in when the row is entered — a pen
+/// ring or underline for the found letters, a pen-wash and a faded letter for the ones that aren't
 /// in the word — staggered by `delay` so a row reads left to right. Marks already there when the
 /// tile appears are simply there.
 private struct PlexTile: View {
@@ -328,7 +349,7 @@ private struct PlexTile: View {
             shape.fill(Color.sheet)
             if mark == .absent { shape.fill(Color.penWash).opacity(ink) }
             if let mark, mark != .absent {
-                MarkSwipe(mark: mark, progress: reduceMotion ? 1 : ink).opacity(reduceMotion ? ink : 1)
+                PenMark(mark: mark, progress: reduceMotion ? 1 : ink).opacity(reduceMotion ? ink : 1)
             }
             Text(letter.map { String($0).uppercased() } ?? "")
                 .font(.system(size: size * 0.5, weight: .bold, design: .rounded))
@@ -373,7 +394,7 @@ private struct PlexKeyFace: View {
         ZStack {
             shape.fill(Color.sheet)
             if mark == .absent { shape.fill(Color.penWash) }
-            if let mark, mark != .absent { MarkSwipe(mark: mark, progress: 1) }
+            if let mark, mark != .absent { PenMark(mark: mark, progress: 1) }
             Text(String(letter).uppercased())
                 .font(.system(size: min(20, width * 0.6), weight: .semibold, design: .rounded))
                 .foregroundStyle(mark == .absent ? Color.ink2 : Color.ink)
@@ -385,53 +406,62 @@ private struct PlexKeyFace: View {
     }
 }
 
-/// The highlighter on a letter. Right spot: a green band through the letter, running a hair past
-/// the tile so a solved row reads as one swipe. Wrong spot: a shorter yellow swipe low under it,
-/// like a quick underline — a different shape, not only a different colour. Soft where the marker
-/// touched down and lifted, a hair off level; multiplied over the sheet in light, the
-/// half-strength token in dark. `progress` 0…1 draws it left to right.
-private struct MarkSwipe: View {
+/// The pen on a letter. Right spot: a ring drawn round it in one loop that starts up on the left and
+/// runs a little past where it began, the way a hand-drawn circle never quite closes. Wrong spot: an
+/// underline, a hair off level. Two shapes and no colour, so neither mark leans on hue to be read.
+/// `progress` 0…1 draws the stroke.
+private struct PenMark: View {
     let mark: PlexMark
     let progress: CGFloat
-    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         GeometryReader { g in
-            let correct = mark == .correct
-            let w = correct ? g.size.width + 6 : g.size.width * 0.8
-            let h = g.size.height * (correct ? 0.72 : 0.28)
-            let into = w * 0.14, out = w * 0.24
-            RoundedRectangle(cornerRadius: h * 0.3, style: .continuous)
-                .fill(correct ? Color.highlighterGreen : Color.highlighter)
-                .frame(width: w, height: h)
-                .mask {
-                    HStack(spacing: 0) {
-                        LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing).frame(width: into)
-                        Rectangle().frame(width: max(0, (w + out) * progress - into - out))
-                        LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: out)
-                        Spacer(minLength: 0)
-                    }
-                    .frame(width: w, alignment: .leading)
-                }
-                .rotationEffect(.degrees(-1.5))
-                .blendMode(scheme == .dark ? .normal : .multiply)
-                .opacity(scheme == .dark ? 1 : 0.9)
-                .position(x: g.size.width / 2, y: g.size.height * (correct ? 0.5 : 0.76))
+            let line = max(1.5, min(g.size.width, g.size.height) * 0.042)
+            (mark == .correct ? AnyShape(PenRing()) : AnyShape(PenUnderline()))
+                .trim(from: 0, to: progress)
+                .stroke(Color.pen, style: StrokeStyle(lineWidth: line, lineCap: .round, lineJoin: .round))
         }
         .opacity(progress == 0 ? 0 : 1)
         .allowsHitTesting(false)
     }
 }
 
-/// Played · Win % · Current streak · Max streak, between two ruled hairlines.
+/// A loop round the middle, widening as it goes so the overshoot rides just outside the start.
+private struct PenRing: Shape {
+    func path(in r: CGRect) -> Path {
+        let rx = r.width * 0.4, ry = min(r.height * 0.4, r.width * 0.46)
+        let start = -2.3, sweep = 2 * Double.pi + 0.45
+        var p = Path()
+        for i in 0...64 {
+            let t = Double(i) / 64, a = start + sweep * t, grow = 0.95 + 0.1 * t
+            let pt = CGPoint(x: r.midX + CGFloat(cos(a) * grow) * rx, y: r.midY + CGFloat(sin(a) * grow) * ry)
+            if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+        }
+        return p
+    }
+}
+
+/// One stroke under the letter, sagging a touch and rising off to the right.
+private struct PenUnderline: Shape {
+    func path(in r: CGRect) -> Path {
+        let y = r.minY + r.height * 0.8
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX + r.width * 0.2, y: y))
+        p.addQuadCurve(to: CGPoint(x: r.maxX - r.width * 0.18, y: y - r.height * 0.03),
+                       control: CGPoint(x: r.midX, y: y + r.height * 0.05))
+        return p
+    }
+}
+
+/// Days · Solved · Streak · Best, between two ruled hairlines.
 private struct PlexStats: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     let save: PlexiconSave
     let streak: Int
 
     private var items: [(value: String, label: String)] {
-        [("\(save.played)", "Played"), ("\(save.winPercent)", "Win %"),
-         ("\(streak)", "Current streak"), ("\(save.bestStreak)", "Max streak")]
+        [("\(save.played)", "Days"), ("\(save.won)", "Solved"),
+         ("\(streak)", "Streak"), ("\(save.bestStreak)", "Best")]
     }
 
     var body: some View {
@@ -467,7 +497,7 @@ private struct PlexStats: View {
     }
 }
 
-/// Wins by number of guesses: a bar per row, today's in the pen.
+/// How many guesses each solve took: a bar per count, today's in the pen.
 private struct GuessBars: View {
     let counts: [Int]
     let today: Int?
@@ -475,7 +505,7 @@ private struct GuessBars: View {
     var body: some View {
         let top = max(1, counts.max() ?? 0)
         VStack(alignment: .leading, spacing: 4) {
-            Text("Wins by guess").font(.pron).foregroundStyle(Color.ink2)
+            Text("Guesses it took").font(.pron).foregroundStyle(Color.ink2)
             ForEach(Array(counts.prefix(Plexicon.maxGuesses).enumerated()), id: \.offset) { i, n in
                 let mine = today == i + 1
                 HStack(spacing: 8) {
@@ -496,7 +526,7 @@ private struct GuessBars: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Wins by guess: " + counts.enumerated().map { "\($0 + 1): \($1)" }.joined(separator: ", "))
+        .accessibilityLabel("Guesses it took: " + counts.enumerated().map { "\($0 + 1): \($1)" }.joined(separator: ", "))
     }
 }
 
@@ -509,12 +539,12 @@ struct PlexiconRulesSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                line("Guess the five-letter word in six tries. Every guess has to be a real word.")
-                line("After each guess, every letter gets marked:")
-                legend("S", .correct, "In the word, in the right spot").padding(.top, 10)
-                legend("A", .present, "In the word, in another spot").padding(.top, 8)
-                legend("L", .absent, "Not in the word").padding(.top, 8)
-                line("A new word every midnight, and every one is a word you can look up.")
+                line("Find today's five-letter word. You get six guesses, and each one has to be a real word.")
+                line("The pen marks every letter of a guess:")
+                legend("S", .correct, "Circled: in the word, in the right spot").padding(.top, 10)
+                legend("A", .present, "Underlined: in the word, in another spot").padding(.top, 8)
+                legend("L", .absent, "Faded: not in the word").padding(.top, 8)
+                line("At the end you'll see what the word means. A new word every midnight.")
                     .padding(.top, 6)
             }
             .padding(.horizontal, 20)

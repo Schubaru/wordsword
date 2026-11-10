@@ -1,21 +1,31 @@
 import Foundation
 
 // MARK: - Tiers
-/// The four highlighters, easiest to hardest. Yellow is everyday words, green moderate, blue the
-/// bookish synonyms, pink the words that only mean the headword in a second sense.
+/// What kind of synonym a cluster is, `1`–`4` in the bank: everyday words, moderate ones, bookish
+/// ones, and words that only mean the headword in a second sense. A day takes one of each so every
+/// board has the same spread. Never shown to the player: no colour, label or order on screen
+/// follows the tier.
 enum LinkTier: Int, CaseIterable, Codable, Hashable, Sendable {
-    case yellow, green, blue, pink
+    case everyday, moderate, bookish, secondSense
 
     init?(letter: Character) {
-        switch letter { case "y": self = .yellow; case "g": self = .green; case "b": self = .blue; case "p": self = .pink; default: return nil }
+        guard let d = letter.wholeNumberValue, let t = LinkTier(rawValue: d - 1) else { return nil }
+        self = t
     }
+}
+
+// MARK: - Inks
+/// The app's four highlighters. Each day deals them to its four groups in a seeded order, so a
+/// colour says which words belong together and nothing about how hard they were.
+enum LinkInk: Int, CaseIterable, Codable, Hashable, Sendable {
+    case yellow, green, blue, pink
 
     var name: String {
         switch self { case .yellow: "Yellow"; case .green: "Green"; case .blue: "Blue"; case .pink: "Pink" }
     }
-    /// The square for the share grid — the same four NYT uses, so a shared result reads at a glance.
-    var square: String {
-        switch self { case .yellow: "🟨"; case .green: "🟩"; case .blue: "🟦"; case .pink: "🟪" }
+    /// The share text's symbol for this ink's group: a shape, so a shared result reads in plain text.
+    var symbol: String {
+        switch self { case .yellow: "●"; case .green: "▲"; case .blue: "■"; case .pink: "◆" }
     }
 }
 
@@ -73,12 +83,14 @@ final class LinkBank: Sendable {
 struct LinkingPuzzle: Hashable, Sendable {
     struct Group: Hashable, Sendable {
         let tier: LinkTier
+        /// The highlighter this group wears today.
+        let ink: LinkInk
         let headword: String
         let words: [String]
     }
 
     let number: Int
-    /// Yellow → pink.
+    /// One per tier, in tier order.
     let groups: [Group]
     /// The sixteen words, shuffled.
     let order: [String]
@@ -89,7 +101,7 @@ struct LinkingPuzzle: Hashable, Sendable {
         let set = Set(guess)
         return groups.first { Set($0.words) == set }
     }
-    /// Three of the four in one group — the "One away…" case.
+    /// Three of the four in one group — the "Three of those share a meaning" case.
     func isOneAway(_ guess: some Collection<String>) -> Bool {
         let set = Set(guess)
         return groups.contains { Set($0.words).intersection(set).count == 3 }
@@ -114,15 +126,18 @@ struct LinkingPuzzle: Hashable, Sendable {
     /// Day N takes cluster N (mod count) from each tier's seeded list. The four counts are kept
     /// pairwise coprime (see the bank's header), so the same four clusters can't meet again for
     /// their product in days — longer than the app will exist. Which four of a cluster's words play,
-    /// and where they land on the board, come from an RNG seeded by the day.
+    /// and where they land on the board, come from an RNG seeded by the day. The inks come from a
+    /// second RNG of their own, so dealing them never changes which words a day plays.
     static func make(number: Int, bank: LinkBank = .shared) -> LinkingPuzzle {
         var rng = SplitMix64(seed: 0x11AC_5EED &+ UInt64(max(0, number)))
+        var inkRng = SplitMix64(seed: 0x11AC_1A4C &+ UInt64(max(0, number)))
+        let inks = LinkInk.allCases.shuffled(using: &inkRng)
         var groups: [Group] = []
         for t in LinkTier.allCases {
             guard let list = bank.byTier[t], !list.isEmpty else { continue }
             let c = list[(max(1, number) - 1) % list.count]
             let picked = Array(c.words.shuffled(using: &rng).prefix(4))
-            groups.append(Group(tier: t, headword: c.headword, words: picked))
+            groups.append(Group(tier: t, ink: inks[groups.count], headword: c.headword, words: picked))
         }
         let order = groups.flatMap(\.words).shuffled(using: &rng)
         return LinkingPuzzle(number: number, groups: groups, order: order)
@@ -160,10 +175,15 @@ extension LinkingPuzzle {
         let lcm = counts.reduce(1) { a, b in a / gcd(a, b) * b }
         assert(lcm >= 365 * 200, "tier counts \(counts) repeat a set after \(lcm) days — make them coprime")
         assert(make(number: 1) == make(number: 1) && make(number: 1) != make(number: 2), "generator isn't deterministic")
+        var laddered = 0
         for n in 1...400 {
             let p = make(number: n)
             assert(p.groups.count == 4 && Set(p.words).count == 16 && p.order.count == 16, "puzzle \(n) is malformed")
+            assert(Set(p.groups.map(\.ink)).count == 4, "puzzle \(n) gives two groups one ink")
+            if p.groups.map(\.ink.rawValue) == p.groups.map(\.tier.rawValue) { laddered += 1 }
         }
+        // A colour mustn't track difficulty: the ink order should match tier order only by chance (1 in 24).
+        assert(laddered < 40, "inks follow the tiers on \(laddered) of 400 days")
         print("LinkingPuzzle.selfCheck: \(bank.clusters.count) clusters \(counts), cycle \(lcm / 365) years")
     }
 

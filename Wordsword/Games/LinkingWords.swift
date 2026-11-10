@@ -46,13 +46,13 @@ import Observation
     var finished: Bool { phase != .playing }
     var canSubmit: Bool { selected.count == 4 && phase == .playing && !submitting }
 
-    /// Each guess as a row of squares, the way results are shared.
-    var shareRows: [[LinkTier]] {
+    /// Each guess as a row of its words' group inks, the way results are shared.
+    var shareRows: [[LinkInk]] {
         guard let puzzle else { return [] }
-        return save.guesses.map { $0.compactMap { puzzle.group(of: $0)?.tier } }
+        return save.guesses.map { $0.compactMap { puzzle.group(of: $0)?.ink } }
     }
     var shareText: String {
-        "Linking words #\(number)\n" + shareRows.map { $0.map(\.square).joined() }.joined(separator: "\n")
+        "Linking words #\(number)\n" + shareRows.map { $0.map(\.symbol).joined(separator: " ") }.joined(separator: "\n")
     }
     /// The results title, by how it went.
     var verdict: String {
@@ -178,7 +178,7 @@ import Observation
             mistakes += 1
             save.store()
             let oneAway = puzzle.isOneAway(guess)
-            if oneAway { show("One away…") }
+            if oneAway { show("Three of those share a meaning") }
             emit(oneAway ? .oneAway : .wrong)
             if mistakes >= Self.maxMistakes { lose(puzzle) }
         }
@@ -192,8 +192,7 @@ import Observation
         phase = .won
     }
 
-    /// Counts today once, the NYT way: a finished day is played; a win extends the streak, a loss
-    /// ends it.
+    /// Counts today once: a finished day is played; a win extends the streak, a loss ends it.
     private func tally(won: Bool) {
         var r = save.record
         guard r.last != save.number else { return }
