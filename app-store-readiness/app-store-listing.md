@@ -10,7 +10,7 @@ Only features that ship today are described. Not mentioned anywhere because they
 
 Alex's pick, `wordsword: AI Dictionary & Games`, is **32 characters**: two over the limit in 2.3.7 ("App names must be limited to 30 characters"), so App Store Connect won't take it. Two pairings keep both halves of that idea. Name and subtitle are both indexed for search, so either one covers "AI", "dictionary" and "games".
 
-**Pairing A (recommended):**
+**Pairing A — chosen by Alex 2026-11-10. Use this one:**
 
 ```text
 wordsword: AI Dictionary

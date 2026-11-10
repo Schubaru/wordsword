@@ -156,3 +156,12 @@ Each step depends only on the steps above it. **[you]** means it's in your brows
 9. **[you] TestFlight** on your iPhone: run every "Unverified" check. Sign in with Apple has never run end to end.
 10. **[me]** Run `/app-store` again against the signed build.
 11. **[you] Submit for review** with **manual release**. A first rejection is normal: reply in the Resolution Center.
+
+## Update, later on 2026-11-10
+- **D1 answered: pairing A.** Name `wordsword: AI Dictionary`, subtitle `Thesaurus, flashcards & games`.
+- **D2 answered: Team ID `DJKZQ223JK`.** It's the same ID as the old free Personal Team: Apple upgraded the team when you enrolled, and Xcode's "Personal Team" label is stale. `project.yml` now signs every configuration with this team, using automatic signing. The free-team Debug overrides and the `.dev` bundle ID are gone.
+- **B2 status: signing is configured, and the archive is blocked on an agreement.** `xcodebuild archive -allowProvisioningUpdates` stopped with: "PLA Update available: You currently don't have access to this membership resource. To resolve this issue, agree to the latest Program License Agreement in your developer account." Only the Account Holder can accept it, at developer.apple.com/account. Then re-run the archive.
+- **B2 closed after you accepted the agreement.**
+  - `xcodebuild archive -allowProvisioningUpdates` **succeeded**. Xcode registered `com.alexschumacher.Wordsword` on team `DJKZQ223JK`, and the provisioning profile carries `com.apple.developer.applesignin`.
+  - A local `-exportArchive` (method `app-store-connect`, destination `export`, nothing uploaded) **succeeded**. It's signed with a "Cloud Managed Apple Distribution" certificate, which expires 11/10/27, under the "iOS Team Store Provisioning Profile". The entitlements are `applesignin`, `get-task-allow = false` and `beta-reports-active = true`. Version 1.0, build 1.
+  - **No known blockers remain in the repo.** Next is App Store Connect: create the app record (steps 5–8 above), then upload, then test in TestFlight.
