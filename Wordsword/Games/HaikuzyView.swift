@@ -332,7 +332,7 @@ extension Font {
 /// baseline on its rule, so a line that wraps at a large text size wraps onto the next rule the
 /// way handwriting would. The hidden word is a pen line — always the same length, so it gives
 /// nothing away — until the day is done; then the word is written in, cut in by the slash and
-/// swept with the pink highlighter when it was found.
+/// swept with the pink highlighter when it was found, the grey pen wash when it wasn't.
 struct HaikuPoem: View {
     enum Reveal: Equatable { case hidden, written(found: Bool) }
 
@@ -383,7 +383,7 @@ struct HaikuPoem: View {
 
 /// The gap in the poem. Hidden: a hand-drawn pen line on the baseline, the same length whatever
 /// the word. Written: the word, cut in by the slash when `animate`, then swept with the pink
-/// highlighter if it was found.
+/// highlighter if it was found, the grey pen wash if not.
 private struct HiddenWord: View {
     let word: String
     let reveal: HaikuPoem.Reveal
@@ -407,18 +407,18 @@ private struct HiddenWord: View {
                     }
             case .written(let found):
                 Text(word)
-                    .background { if found { HighlighterSwipe(color: .highlighterPink, progress: sweep) } }
+                    // Pink only ever means found; a missed word gets the quiet pen wash.
+                    .background { HighlighterSwipe(color: found ? .highlighterPink : .penWash, progress: sweep) }
                     .slashReveal(cut, edge: .pen)
-                    .onAppear { write(found) }
+                    .onAppear { write() }
             }
         }
     }
 
-    private func write(_ found: Bool) {
-        guard animate, !reduceMotion else { cut = 1; sweep = found ? 1 : 0; return }
+    private func write() {
+        guard animate, !reduceMotion else { cut = 1; sweep = 1; return }
         cut = 0; sweep = 0
         withAnimation(Motion.slash) { cut = 1 }
-        guard found else { return }
         Task {
             try? await Task.sleep(for: .milliseconds(380))
             withAnimation(Motion.slash) { sweep = 1 }
