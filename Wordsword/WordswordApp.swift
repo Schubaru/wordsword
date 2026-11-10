@@ -39,6 +39,8 @@ struct WordswordApp: App {
             // `SIMCTL_CHILD_OPEN_ROUTE=wordWheel simctl launch …` lands on a screen for screenshots.
             .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "wordWheel" { router.path = [.games, .wordWheel] } }
             .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "linkingWords" { router.path = [.linkingWords] } }
+            .task { await Task.detached { PlexiconWords.selfCheck() }.value }
+            .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "plexicon" { router.path = [.plexicon] } }
             .task { DebugSnapshots.runIfRequested(router, auth) }
             #endif
             // wordsword://define            → focus the input (future widget)
@@ -65,6 +67,7 @@ enum Route: Hashable {
     case games                             // the hub: every game, and the words they turned up
     case wordWheel
     case linkingWords
+    case plexicon
     case wordsFound
 }
 

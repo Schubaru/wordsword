@@ -94,6 +94,7 @@ struct GamesEntry: View {
     @Environment(Router.self) private var router
     @State private var save = WordWheelSave.load()
     @State private var linking = LinkingWordsSave.load()
+    @State private var plexicon = PlexiconSave.load()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -112,8 +113,13 @@ struct GamesEntry: View {
             } action: {
                 router.path.append(.linkingWords)
             }
+            GameCard(title: "Plexicon", detail: Plexicon.cardDetail(plexicon), rule: rule) {
+                PlexDoodle(color: .ink, accent: .highlighterGreen, hint: .highlighter)
+            } action: {
+                router.path.append(.plexicon)
+            }
         }
-        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load() }
+        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load(); plexicon = PlexiconSave.load() }
     }
 }
 

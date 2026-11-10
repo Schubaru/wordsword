@@ -400,3 +400,65 @@ private struct LinkSwipe: Shape {
         return p
     }
 }
+
+/// Plexicon: three rows of five little tiles — the board, drawn — with a yellow swipe low under one
+/// letter of the second guess and the green highlighter run straight across the last row: solved.
+/// Green is Plexicon's own accent, the way yellow is Linking words'.
+struct PlexDoodle: View {
+    var color: Color = .primary
+    var accent: Color = .green
+    var hint: Color = .yellow
+
+    var body: some View {
+        GeometryReader { g in
+            let s = min(g.size.width, g.size.height)
+            let w = max(1.2, s * 0.04)
+            ZStack {
+                PlexSwipe(row: 2, from: 0.05, to: 0.95).stroke(accent, style: .init(lineWidth: s * 0.17, lineCap: .round))
+                PlexSwipe(row: 1, from: PlexGrid.x(1) - 0.07, to: PlexGrid.x(1) + 0.07, low: true).stroke(hint, style: .init(lineWidth: s * 0.08, lineCap: .round))
+                PlexTiles().doodle(color, width: w * 0.75)
+            }
+            .frame(width: s, height: s)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Row centres and tile size for the Plexicon doodle.
+private enum PlexGrid {
+    static let rows: [CGFloat] = [0.22, 0.50, 0.78]
+    static let tile: CGFloat = 0.14
+    static let pitch: CGFloat = 0.19
+    static func x(_ c: Int) -> CGFloat { 0.5 + CGFloat(c - 2) * pitch }
+}
+
+private struct PlexTiles: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let s = min(r.width, r.height), t = PlexGrid.tile * s
+        for y in PlexGrid.rows {
+            for c in 0..<5 {
+                let k = P(r, PlexGrid.x(c), y)
+                p.addRoundedRect(in: CGRect(x: k.x - t / 2, y: k.y - t / 2, width: t, height: t),
+                                 cornerSize: CGSize(width: 0.035 * s, height: 0.035 * s))
+            }
+        }
+        return p
+    }
+}
+
+/// A highlighter pass along one row, a hair off level; `low` sits it under the letters.
+private struct PlexSwipe: Shape {
+    let row: Int
+    let from: CGFloat
+    let to: CGFloat
+    var low = false
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let y = PlexGrid.rows[row] + (low ? 0.06 : 0)
+        p.move(to: P(r, from, y + 0.01))
+        p.addQuadCurve(to: P(r, to, y - 0.015), control: P(r, (from + to) / 2, y + 0.005))
+        return p
+    }
+}

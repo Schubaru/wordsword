@@ -139,6 +139,7 @@ struct HomeView: View {
                 case .games:                GamesHubView()
                 case .wordWheel:            WordWheelView()
                 case .linkingWords:         LinkingWordsView()
+                case .plexicon:             PlexiconView()
                 case .wordsFound:           WordsFoundView()
                 }
             }
