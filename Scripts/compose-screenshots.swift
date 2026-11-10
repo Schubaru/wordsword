@@ -6,12 +6,14 @@ import AppKit
 
 let panels: [(raw: String, name: String, headline: String)] = [   // |…| marks the highlighter swipe, \n breaks the line
     ("s-sentence",      "01-define",        "Any word,\nin |plain English|"),
-    ("s-all-words",     "02-library",       "Every word you\nlook up, |kept|"),
-    ("s-chain",         "03-chain",         "Follow one word\n|to the next|"),
-    ("s-flashcard",     "04-flashcards",    "Flashcards that\n|make it stick|"),
-    ("s-home",          "05-home",          "Your |word of the day|"),
-    ("s-word-wheel",    "06-word-wheel",    "Spell words,\n|level after level|"),
+    ("s-haikuzy",       "02-haikuzy",       "A daily haiku,\n|one word missing|"),
+    ("s-all-words",     "03-library",       "Every word you\nlook up, |kept|"),
+    ("s-chain",         "04-chain",         "Follow one word\n|to the next|"),
+    ("s-flashcard",     "05-flashcards",    "Flashcards that\n|make it stick|"),
+    ("s-plexicon",      "06-plexicon",      "Five letters,\n|six tries|"),
     ("s-linking-words", "07-linking-words", "A fresh |puzzle|\nevery day"),
+    ("s-word-wheel",    "08-word-wheel",    "Spell words,\n|level after level|"),
+    ("s-home",          "09-home",          "Four |word games|,\none search away"),
 ]
 let sizes: [(dir: String, w: Int, h: Int)] = [("6.3", 1206, 2622), ("6.9", 1320, 2868)]
 

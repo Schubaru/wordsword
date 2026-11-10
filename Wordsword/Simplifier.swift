@@ -39,6 +39,9 @@ enum Simplifier {
         assert(!passes("Cleft means split in two.", for: "cleft"))
         assert(passes("A long, narrow opening made by splitting something.", for: "cleft"))
         assert(passes("It means feeling hopeful that things will go well.", for: "sanguine"))
+        assert(tidy("Sure! Here's a sentence using \"sanguine\": \"She stayed sanguine.\"") == "She stayed sanguine.")
+        assert(tidy("here's a different way to explain 'cleft': A split.") == "A split.")
+        assert(uses("Her hopes stayed sanguine.", "sanguine") && uses("She was happier.", "happy") && !uses("A split.", "cleft"))
     }
     #endif
 
@@ -59,7 +62,7 @@ enum Simplifier {
                 Stay accurate: if a comparison would be a stretch, use a plain real example instead. \
                 End by making clear what "\(d.word)" means. \
                 Two or three short sentences in plain words. Reply with only the explanation.
-                """) { return firstSentences(s, 3) }
+                """), uses(s, d.word) { return firstSentences(s, 3) }
         }
         var angles: [String] = []
         if let r = rephrase(sense) { angles.append(r) }
@@ -124,15 +127,30 @@ enum Simplifier {
         return Array(ws.filter { $0.count >= 4 && $0 != word && !filler.contains($0) }.prefix(5))
     }
 
-    static func sentence(_ d: Definition) async -> String {
-        if let s = await ask("Write one natural, modern example sentence using the word \"\(d.word)\" as a \(d.partOfSpeech), the kind you'd find in a novel. Reply with only the sentence.") { return s }
+    /// The model's sentence if it really uses the word, else the dictionary's example, else nil:
+    /// a made-up template ("It was so sanguine that everyone noticed") misuses more words than it helps.
+    static func sentence(_ d: Definition) async -> String? {
+        let reply = await ask("Write one natural, modern example sentence using the word \"\(d.word)\" as a \(d.partOfSpeech), the kind you'd find in a novel. Reply with only the sentence.")
+        if let s = reply, uses(s, d.word) { return firstSentences(s, 1) }
         if let e = d.example, !e.isEmpty { return e.prefix(1).uppercased() + e.dropFirst() }
-        switch d.partOfSpeech {   // ponytail: canned templates until the on-device model is available
-        case "adjective": return "It was so \(d.word) that everyone in the room noticed."
-        case "verb":      return "She decided to \(d.word) before anyone could stop her."
-        case "adverb":    return "He said it \(d.word), and the conversation shifted."
-        default:          return "There was a certain \(d.word) to the whole afternoon."
+        return nil
+    }
+
+    /// The reply mentions the word, allowing a changed ending (happy → happier, sanguine → sanguinely).
+    static func uses(_ s: String, _ word: String) -> Bool {
+        let w = word.lowercased()
+        let stem = w.count > 4 && (w.hasSuffix("e") || w.hasSuffix("y")) ? String(w.dropLast()) : w
+        return s.lowercased().contains(stem)
+    }
+
+    /// The on-device model opens by echoing the request ("Sure! Here's a sentence using…:") and
+    /// wraps its answer in quotes. Strip both, so every caller sees only the answer.
+    static func tidy(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        for preamble in [#"(?i)^(sure|of course|okay|ok|certainly)[!.,]\s*"#, #"(?i)^(here(?:'|’)s|here is)[^:\n]*:\s*"#] {
+            s = s.replacingOccurrences(of: preamble, with: "", options: .regularExpression)
         }
+        return s.trimmingCharacters(in: CharacterSet(charactersIn: "\"“”' \n"))
     }
 
     // MARK: - heuristics
@@ -156,6 +174,14 @@ enum Simplifier {
         return false
     }
 
+    /// The simulator's model misses 8s on a cold start; the screenshot tour sets MODEL_TIMEOUT=30.
+    private static var timeout: Double {
+        #if DEBUG
+        if let t = ProcessInfo.processInfo.environment["MODEL_TIMEOUT"].flatMap(Double.init) { return t }
+        #endif
+        return 8
+    }
+
     private static func ask(_ prompt: String) async -> String? {
         #if canImport(FoundationModels)
         if #available(iOS 26, *) {
@@ -164,9 +190,9 @@ enum Simplifier {
             return await withTaskGroup(of: String?.self) { g in
                 g.addTask {
                     let session = LanguageModelSession(instructions: "You are wordsword, a sharp friend who explains words in plain English. Be brief. Never use markdown.")
-                    return try? await session.respond(to: prompt).content.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return (try? await session.respond(to: prompt).content).map(tidy)
                 }
-                g.addTask { try? await Task.sleep(for: .seconds(8)); return nil }
+                g.addTask { try? await Task.sleep(for: .seconds(timeout)); return nil }
                 let first = await g.next() ?? nil
                 g.cancelAll()
                 return first

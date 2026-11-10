@@ -346,7 +346,8 @@ struct DefineView: View {
         guard let d = current else { return }
         append(.user("Use it in a sentence")); busy = true
         let t = await Simplifier.sentence(d)
-        busy = false; append(.text(t))
+        busy = false
+        if let t { append(.text(t)) } else { append(.end("The dictionary has no example sentence for \(d.word)")) }
     }
 
     private func moreSynonyms() async {

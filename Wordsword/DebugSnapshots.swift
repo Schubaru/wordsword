@@ -59,6 +59,9 @@ enum DebugSnapshots {
                 router.debug = "flip"; await snap("s-flashcard", after: 1.5)
                 router.path = [.games, .wordWheel]; await snap("s-word-wheel", after: 2.5)
                 router.path = [.linkingWords]; await snap("s-linking-words", after: 3)
+                // Pose them with SIMCTL_CHILD_HAIKUZY_GUESSES / PLEXICON_GUESSES on an empty day's save.
+                router.path = [.haikuzy]; await snap("s-haikuzy", after: 3)
+                router.path = [.plexicon]; await snap("s-plexicon", after: 3)
                 print("SHOTS DONE")
             }
             return
