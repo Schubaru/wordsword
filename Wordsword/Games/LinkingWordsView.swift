@@ -366,7 +366,7 @@ private struct SolvedStrip: View {
 /// level. In light mode it multiplies over the page, so the ink and the sheet show through the way
 /// they do under a real marker; dark paper has no highlighter, so there the tier colour just sits
 /// at half strength. `progress` 0…1 draws it.
-private struct HighlighterSwipe: View {
+struct HighlighterSwipe: View {
     let color: Color
     let progress: CGFloat
     @Environment(\.colorScheme) private var scheme

@@ -55,3 +55,14 @@ OUT.mkdir(parents=True, exist_ok=True)
 (OUT / 'wheel-common.txt').write_text('\n'.join(esl + two) + '\n')
 (OUT / 'wheel-seeds.txt').write_text('\n'.join(seeds) + '\n')
 print(f'words {len(enable)}  common {len(esl)}+{len(two)}  seeds', {n: sum(len(s) == n for s in seeds) for n in range(4, 8)})
+
+# Haikuzy takes guesses of any length, so it gets every ENABLE word, and an everyday ranking of any
+# length to pick the likely word when a typo could be more than one.
+def any_len(w): return re.fullmatch(r'[a-z]{2,}', w) is not None and w not in BLOCK
+everything = sorted({w for w in lines(fetch(ENABLE)) if any_len(w)})
+known = set(everything)
+esl_all = [w for w in lines(z.read('American/3esl.txt')) if any_len(w) and w in known]
+two_all = [w for w in lines(z.read('American/2of12.txt')) if any_len(w) and w in known and w not in set(esl_all)]
+(OUT / 'haiku-words.txt').write_text('\n'.join(everything) + '\n')
+(OUT / 'haiku-common.txt').write_text('\n'.join(esl_all + two_all) + '\n')
+print(f'haiku words {len(everything)}  common {len(esl_all)}+{len(two_all)}')

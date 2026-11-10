@@ -22,16 +22,20 @@
 		36566C3E6A22684F18EA4960 /* WordswordApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AC5FF4B3F440C2C8754B78 /* WordswordApp.swift */; };
 		3E435B9A6C1B8C4397E9F8EC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82EFBEEA036E82CC334B8B8 /* OnboardingView.swift */; };
 		4647CCCBACA4F4883CD2032A /* LinkingWordsSave.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95D046A7CAFD1967306CDE3 /* LinkingWordsSave.swift */; };
+		4CFEB80A4CE737A0996E558C /* HaikuzyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4877AF007C94FB07E52960C4 /* HaikuzyView.swift */; };
 		52623B0A5E8D4BE17B37724F /* WordWheelSave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6222C5A69BEB0A78E0A019 /* WordWheelSave.swift */; };
 		55E72E7A10493DEBD2F98702 /* Simplifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28187C60638F1D6703C0A3C5 /* Simplifier.swift */; };
 		57F2574387EACDD5620C2F16 /* wheel-words.txt in Resources */ = {isa = PBXBuildFile; fileRef = 566973DA3AD398B1F541A616 /* wheel-words.txt */; };
 		5FA1E163B632759B766F0495 /* LastSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E642F0E1C63E768473F1F0B4 /* LastSearch.swift */; };
 		61AFEC484A7DE4540A72E1AB /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA246B0A0258CE003755A7A /* Auth.swift */; };
+		648A969F57254597C897E424 /* haikuzy-near.txt in Resources */ = {isa = PBXBuildFile; fileRef = AA8A8413AE8E51AB4B94FF47 /* haikuzy-near.txt */; };
 		6AB3E63C75D6E7F10EABE323 /* PlexiconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E32AC2B9645684A3F74A41C7 /* PlexiconView.swift */; };
+		6F7BAD630BDFA6EFCEBCC89F /* haikuzy.txt in Resources */ = {isa = PBXBuildFile; fileRef = 8446945797644A87D0E7094D /* haikuzy.txt */; };
 		6FDF33E98AE3723F1D357AB1 /* WordWheel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 533878E7037A19FA0A307D08 /* WordWheel.swift */; };
 		7A228F60F4738E5FFE28EDE3 /* FlashcardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8373E914CCD11112D8F478E1 /* FlashcardsView.swift */; };
 		7B60DA3305E8A337ADEE99F3 /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA6CE4C437C4034FD7165C0 /* BoardView.swift */; };
 		7D6A4CF8A51025BCDF01A06F /* WordWheelLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AED33D8E5403815AA17BE6 /* WordWheelLevels.swift */; };
+		7D7F3EB2CE417723734CEF3E /* haiku-words.txt in Resources */ = {isa = PBXBuildFile; fileRef = F3B8C5D4EA0A1CDDDBCD4E41 /* haiku-words.txt */; };
 		7DA45423AE79EBE66A980078 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCB0002F429554F359729681 /* SplashView.swift */; };
 		7FF069C7353383257427B9CD /* Plexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD7FD9AF92FBB68C75D032C2 /* Plexicon.swift */; };
 		82A5C475103B048B7CF25B6C /* LinkingWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DB423FD4F4E627BD83A54F /* LinkingWords.swift */; };
@@ -41,10 +45,12 @@
 		A5E35C203AC5DC24ED0F75D3 /* WordWheelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B909F660788EEF83697F73 /* WordWheelView.swift */; };
 		AC4B842A0FE742C371E6F7B8 /* Doodles.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6CB1089006454D1B38FF9EC /* Doodles.swift */; };
 		AC93D3CA884953AB274A3121 /* WordWheelRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48349D73C8FDF7546C028DAC /* WordWheelRules.swift */; };
+		B068F5BEC9E30F802CE3E235 /* Haikuzy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC47D6EFE7C15B72112B564 /* Haikuzy.swift */; };
 		B3E6F62001F8B99E8F57DAAD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A26285CB12EF20EC3621EA9 /* Assets.xcassets */; };
 		B8BDC07AAD54A85B60C269C4 /* DebugSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D18B3725F1B305F515CEC0D /* DebugSnapshots.swift */; };
 		C2CFEB45AC097FA3F0EDCCB3 /* Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4BB60849D2099216E44C35A /* Dictionary.swift */; };
 		CCBD393E4CAD615C1ECB084F /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5D14C2424FA7BEB7644E59 /* Theme.swift */; };
+		D1AEA0DEFACD52B38D9993FF /* haiku-common.txt in Resources */ = {isa = PBXBuildFile; fileRef = 03CEB5A44F110EC5C62B9D82 /* haiku-common.txt */; };
 		D2EF37DADF89E9F9CCC0EFCF /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C38DA9F8FA3A1838A7E025 /* LibraryView.swift */; };
 		D543D6A4CBCAB22E8E395333 /* Screens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995A9D6CF64C4A26544BDBC5 /* Screens.swift */; };
 		DDCBD2ADC5CC54C012D296FE /* Voice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891DCB51B14D193BD2B1E092 /* Voice.swift */; };
@@ -63,6 +69,7 @@
 
 /* Begin PBXFileReference section */
 		021530C362EEC05D054CB050 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		03CEB5A44F110EC5C62B9D82 /* haiku-common.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "haiku-common.txt"; sourceTree = "<group>"; };
 		0C6222C5A69BEB0A78E0A019 /* WordWheelSave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordWheelSave.swift; sourceTree = "<group>"; };
 		15B119C064CE24472EB62EA2 /* LinkingWordsPuzzles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingWordsPuzzles.swift; sourceTree = "<group>"; };
 		17DB423FD4F4E627BD83A54F /* LinkingWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingWords.swift; sourceTree = "<group>"; };
@@ -74,16 +81,19 @@
 		3C5D14C2424FA7BEB7644E59 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		44C38DA9F8FA3A1838A7E025 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		48349D73C8FDF7546C028DAC /* WordWheelRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordWheelRules.swift; sourceTree = "<group>"; };
+		4877AF007C94FB07E52960C4 /* HaikuzyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaikuzyView.swift; sourceTree = "<group>"; };
 		49D5CD536026E24A57C6A156 /* WordswordUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WordswordUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		533878E7037A19FA0A307D08 /* WordWheel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordWheel.swift; sourceTree = "<group>"; };
 		53A7BB35CC4E1A5DA156950C /* Wordsword.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Wordsword.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		566973DA3AD398B1F541A616 /* wheel-words.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "wheel-words.txt"; sourceTree = "<group>"; };
 		580EF313045218A662AA2A23 /* WheelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WheelView.swift; sourceTree = "<group>"; };
+		5AC47D6EFE7C15B72112B564 /* Haikuzy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haikuzy.swift; sourceTree = "<group>"; };
 		6AA0876D08FCD9CD8D4DD0C3 /* LinkingWordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingWordsView.swift; sourceTree = "<group>"; };
 		79AC5FF4B3F440C2C8754B78 /* WordswordApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordswordApp.swift; sourceTree = "<group>"; };
 		7BC2A3636195EDE7A05E137A /* StoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryView.swift; sourceTree = "<group>"; };
 		7C05C7EA87D402DE6CF59C27 /* GamesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamesHubView.swift; sourceTree = "<group>"; };
 		8373E914CCD11112D8F478E1 /* FlashcardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlashcardsView.swift; sourceTree = "<group>"; };
+		8446945797644A87D0E7094D /* haikuzy.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = haikuzy.txt; sourceTree = "<group>"; };
 		86B909F660788EEF83697F73 /* WordWheelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordWheelView.swift; sourceTree = "<group>"; };
 		88AED33D8E5403815AA17BE6 /* WordWheelLevels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordWheelLevels.swift; sourceTree = "<group>"; };
 		891DCB51B14D193BD2B1E092 /* Voice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice.swift; sourceTree = "<group>"; };
@@ -93,6 +103,7 @@
 		9B23A28DD3DD5ED7E33F9F14 /* DefineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefineView.swift; sourceTree = "<group>"; };
 		9D18B3725F1B305F515CEC0D /* DebugSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSnapshots.swift; sourceTree = "<group>"; };
 		A4BB60849D2099216E44C35A /* Dictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dictionary.swift; sourceTree = "<group>"; };
+		AA8A8413AE8E51AB4B94FF47 /* haikuzy-near.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "haikuzy-near.txt"; sourceTree = "<group>"; };
 		BCB0002F429554F359729681 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		BCD8ED37C3DFFB7BA7031821 /* linking-words.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "linking-words.txt"; sourceTree = "<group>"; };
 		BD7FD9AF92FBB68C75D032C2 /* Plexicon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Plexicon.swift; sourceTree = "<group>"; };
@@ -106,6 +117,7 @@
 		E642F0E1C63E768473F1F0B4 /* LastSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastSearch.swift; sourceTree = "<group>"; };
 		E6CB1089006454D1B38FF9EC /* Doodles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Doodles.swift; sourceTree = "<group>"; };
 		E82EFBEEA036E82CC334B8B8 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		F3B8C5D4EA0A1CDDDBCD4E41 /* haiku-words.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "haiku-words.txt"; sourceTree = "<group>"; };
 		F8555EA8868781CF56D4058C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		FDA246B0A0258CE003755A7A /* Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -157,6 +169,12 @@
 			children = (
 				1AA6CE4C437C4034FD7165C0 /* BoardView.swift */,
 				7C05C7EA87D402DE6CF59C27 /* GamesHubView.swift */,
+				03CEB5A44F110EC5C62B9D82 /* haiku-common.txt */,
+				F3B8C5D4EA0A1CDDDBCD4E41 /* haiku-words.txt */,
+				AA8A8413AE8E51AB4B94FF47 /* haikuzy-near.txt */,
+				5AC47D6EFE7C15B72112B564 /* Haikuzy.swift */,
+				8446945797644A87D0E7094D /* haikuzy.txt */,
+				4877AF007C94FB07E52960C4 /* HaikuzyView.swift */,
 				BCD8ED37C3DFFB7BA7031821 /* linking-words.txt */,
 				17DB423FD4F4E627BD83A54F /* LinkingWords.swift */,
 				15B119C064CE24472EB62EA2 /* LinkingWordsPuzzles.swift */,
@@ -275,6 +293,10 @@
 			files = (
 				B3E6F62001F8B99E8F57DAAD /* Assets.xcassets in Resources */,
 				9EA392B633DE8F8F18ECBD05 /* PrivacyInfo.xcprivacy in Resources */,
+				D1AEA0DEFACD52B38D9993FF /* haiku-common.txt in Resources */,
+				7D7F3EB2CE417723734CEF3E /* haiku-words.txt in Resources */,
+				648A969F57254597C897E424 /* haikuzy-near.txt in Resources */,
+				6F7BAD630BDFA6EFCEBCC89F /* haikuzy.txt in Resources */,
 				1FE395173B78CE853821E641 /* linking-words.txt in Resources */,
 				32ACD1782D0D2480AE3046C5 /* wheel-common.txt in Resources */,
 				1907EFC9F065AFEE7A69B415 /* wheel-seeds.txt in Resources */,
@@ -306,6 +328,8 @@
 				AC4B842A0FE742C371E6F7B8 /* Doodles.swift in Sources */,
 				7A228F60F4738E5FFE28EDE3 /* FlashcardsView.swift in Sources */,
 				86C61EC39BE644F3163DB6A5 /* GamesHubView.swift in Sources */,
+				B068F5BEC9E30F802CE3E235 /* Haikuzy.swift in Sources */,
+				4CFEB80A4CE737A0996E558C /* HaikuzyView.swift in Sources */,
 				32912BDAF1D14119FCA29518 /* HomeView.swift in Sources */,
 				5FA1E163B632759B766F0495 /* LastSearch.swift in Sources */,
 				D2EF37DADF89E9F9CCC0EFCF /* LibraryView.swift in Sources */,

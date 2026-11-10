@@ -20,7 +20,7 @@ Platform: iOS (SwiftUI). Follows system light/dark. Liquid Glass (`.glassEffect`
 | highlighter | #FFE244 | #D6B529 @ 50% | Yellow, the first of four highlighters: the easiest group in Linking words. Only ever marks a solved group there (the headword swipe was removed — it fought the word for legibility) |
 | highlighter-green | #B7F0A2 | #6FB04A @ 50% | Linking words' second tier |
 | highlighter-blue | #A6DCFF | #4A9BE0 @ 50% | Linking words' third tier |
-| highlighter-pink | #FFB7DC | #D05C9A @ 50% | Linking words' trickiest tier. All four sit at half strength in dark so `ink` on them stays past 4.5:1 |
+| highlighter-pink | #FFB7DC | #D05C9A @ 50% | Linking words' trickiest tier, and Haikuzy's one mark: the hidden word, found. All four sit at half strength in dark so `ink` on them stays past 4.5:1 |
 | rule | #DADEE5 | #1C1F24 | Hairline dividers, and the edge on sheets and cards |
 | edge | #C3C8D1 | #343B48 | The outline on list cards (Library, wordlists, Settings): a step darker than `rule` so white rows read off the white paper |
 | shadow | black @ 10% | | Sheet lift (radius 24) |
@@ -173,7 +173,8 @@ until you stop talking.
 
 ## Games (`Games/`)
 
-Games are the first thing on the Home paper (`GamesEntry`): a `Play with words` header written on
+Games are the first thing on the Home paper (`GamesEntry`): the **featured game's card** (Haikuzy,
+see below), then a `Play with words` header written on
 a rule (the hub is hidden for now, so it's not a link), then **one `GameCard` per game**, full width, stacked. Every game wears the
 same card — its own doodle (48pt, scaled), its name in rounded `.headline`, where you are in it
 (`Level 5`) in `ink-2`, a chevron — and a tap goes straight into the game. The card is a sheet lying
@@ -280,3 +281,66 @@ four synonyms to find, four strikes, one puzzle a day for everyone.
   mistakes are replayed from its guesses.
 - **DEBUG env vars:** `OPEN_ROUTE=linkingWords` opens the game at launch; `LINKING_DAY=N` picks the
   puzzle; `LINKING_POSE=K` starts with K groups solved; `LINKING_CAPTION=S` holds captions S seconds.
+
+**Haikuzy — the featured game** (`HaikuzyView`, logic in `Haikuzy`, numbers in `HaikuzyRules`,
+progress in `HaikuzySave`, the poems in `haikuzy.txt`): one haiku a day with one word cut out of it;
+four guesses; every guess scores 1–100 for how close it is in meaning, and the word scores 100.
+
+- **The featured card** (`HaikuzyCard`) sits above `Play with words` and is bigger than a
+  `GameCard`, because the card *is* today's poem: the same header every game card has (doodle 48pt,
+  name, where you are — "Guess the missing word" / "Guess 2 of 4 · best 72" / "Solved in 3" /
+  "Best 87 · back tomorrow", chevron), then the haiku in Define's serif (`.define`) written on
+  `paper-rule` hairlines drawn inside the sheet at each baseline, the blank in it. Sheet fill, 1pt
+  `rule` edge, radius 22, the `GameCard` lift. `RuleSnap` rounds its height up to whole rules and
+  sets its bottom on one, 10pt under the line before. Once the day is done the word is written in,
+  swept pink if it was found. One tap, one VoiceOver element that reads the poem ("blank" for the gap).
+- **The doodle** (`HaikuDoodle`): three pen lines, short-long-short, the middle one broken with a
+  pink swipe in the gap.
+- **The poem** (`HaikuPoem`) is written on the rules: each line is a `RuledFlow` of words in rows
+  exactly one rule tall with every baseline on its rule, so a line that wraps at a large text size
+  wraps onto the next rule. The game screen uses `.poem` (serif `.title2`) on the paper's own rules.
+  **The blank** is a `DoodleStroke` pen line on the baseline, always 76pt (scaled) whatever the word,
+  so its length gives nothing away. Written in, the word is cut in by `slashReveal` and swept with
+  the pink `HighlighterSwipe` 380ms later — the screen's one authored moment.
+- **The screen,** top down: the caption on a rule ("Guess the missing word", the warmth of the last
+  guess — So close / Warm / Lukewarm / Cold — "N guesses left", "It was “ember”"), one rule, the
+  poem, one rule, then four **guess lines** two rules each: the word in rounded semibold (a fixed typo
+  beside it in `.pron`, struck through), the score trailing in rounded `.title3`, and a 5pt bar on the
+  next line as long as the score. The best so far is the pen (bold score, pen bar); the rest `ink-2`.
+  An empty slot is bare paper. The field is pinned above the keyboard (`safeAreaInset`): Home's
+  search field — body type, `sheet` fill, 1pt `rule` edge turning `pen` on focus — with the
+  placeholder "Guess 2 of 4" and, once there's a word, a pen-filled arrow (Go does the same).
+  Autocorrect is off: the game fixes typos itself and shows the fix. A finished day swaps the field
+  for an outlined `CTAStyle` "Results". Header: back · 44pt knight · `questionmark`.
+- **Real words only, typos fixed and shown** (`HaikuzyWords.resolve`): a real word is taken as typed
+  (never "corrected" — "glob" stays "glob"); otherwise a single swapped-letter fix wins outright
+  ("gloeb" → "globe"), then a single everyday word one edit away (two for 6+ letters); several, and
+  Home's did-you-mean chips come up under "Did you mean", minus anything already guessed. Nothing
+  close: "Not a word I know". Neither a miss nor a repeat ("Already guessed") spends a guess.
+- **Scoring** (`HaikuzyScore`, offline, the same on every phone): the word, a plural of it, or its
+  stem when the word is a past form ("muffle" for "muffled") is 100; anything else is the better of
+  its rank in the answer's bundled "means like" list (`haikuzy-near.txt`: rank 1 ≈ 96, 10 ≈ 78,
+  100 ≈ 60) and Apple's on-device word embedding scaled between the answer's 5th-nearest neighbour
+  (≈ 95) and an everyday word (1), capped at 99. The list comes from Datamuse, cleaned by the
+  embedding, built by `Scripts/make-haikuzy-near.swift`; the curve is two functions in `HaikuzyRules`.
+- **The bank** (`haikuzy.txt`): `season | line / line / line`, the word in `{braces}`, optionally
+  `{cardinal:bird+bird,robin}` — a sense for the lookup and words that should count as closest.
+  Original poems: one moment, present tense, two images across a cut, the season in the images,
+  short-long-short. Day N reads the next poem of its own (northern) season, so the bank is written
+  per season in reading order and only ever appended to. #1 is 2026-11-10; the first 60 run to
+  Jan 8 (the solstice and the turn of the year land on their own poems); a season with no poems
+  yet borrows the whole bank. `HaikuzyBank.selfCheck()` (DEBUG) asserts one blank, a real word, a
+  near-list line, no word twice, no other word in the poem sharing the word's root, and the dates.
+  Guess lists: `haiku-words.txt` (all of ENABLE) and `haiku-common.txt` (12dicts, any length) from
+  `Scripts/make-wordlists.py`.
+- **Results** (Plexicon's bottom overlay): the knight at 96pt, the verdict (by guess count when
+  found — First guess / Sharp / Nicely done / Last guess — else So close / Warm / Not today), the
+  finished poem on hairlines, the scores (`96 · 95 · 100`), a filled "Look up “ember”", an outlined
+  Share (`Haikuzy #N` and the scores, never the word), "Next haiku in Nh Nm". No streaks or stats.
+  The revealed word goes into Words found.
+- **Haptics:** rigid on a new best, soft otherwise, warning on a non-word, success on the word.
+  The knight cheers a new best of 70+, slumps under 40. **Reduce Motion:** the word appears written,
+  bars appear drawn; haptics stay. **VoiceOver:** each poem line is one element, each guess line
+  reads "Guess 2, fire, fixed from fier, 95 of 100, best so far"; captions are announced.
+- **DEBUG env vars:** `OPEN_ROUTE=haikuzy`; `HAIKUZY_DAY=N` picks the poem (overwrites today's save);
+  `HAIKUZY_GUESSES=coal,fire` opens with those played.

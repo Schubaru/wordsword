@@ -5,18 +5,22 @@ struct GamesHubView: View {
     @Environment(Router.self) private var router
     @State private var save = WordWheelSave.load()
     @State private var linking = LinkingWordsSave.load()
+    @State private var haikuzy = HaikuzySave.load()
 
     var body: some View {
         List {
             Section {
-                row("Word Wheel", detail: "Level \(save.level) · \(save.coins) coins", icon: "a.circle", edge: .first) {
+                row("Haikuzy", detail: Haikuzy.cardDetail(haikuzy), icon: "text.alignleft", edge: .first) {
+                    router.path.append(.haikuzy)
+                }
+                row("Word Wheel", detail: "Level \(save.level) · \(save.coins) coins", icon: "a.circle", edge: .middle) {
                     router.path.append(.wordWheel)
                 }
                 row("Linking words", detail: LinkingWords.cardDetail(linking), icon: "square.grid.2x2", edge: .last) {
                     router.path.append(.linkingWords)
                 }
             } footer: {
-                Text("Drag across a wheel of letters to spell words, or sort sixteen words into four groups that mean the same thing. Every word you find is one you can look up.")
+                Text("Find the word missing from a haiku, drag across a wheel of letters to spell words, or sort sixteen words into four groups that mean the same thing. Every word you find is one you can look up.")
             }
             Section {
                 row("Words found", detail: "\(WordsFoundView.all().count)", icon: "text.badge.checkmark", edge: .only) {
@@ -27,7 +31,7 @@ struct GamesHubView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .paperScreen("Games")
-        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load() }
+        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load(); haikuzy = HaikuzySave.load() }
     }
 
     private func row(_ title: String, detail: String, icon: String, edge: SheetRowEdge, action: @escaping () -> Void) -> some View {
@@ -48,10 +52,10 @@ struct WordsFoundView: View {
     @Environment(Router.self) private var router
     @State private var words = WordsFoundView.all()
 
-    /// Both games' finds, newest first within each, without repeats.
+    /// Every game's finds, newest first within each, without repeats.
     static func all() -> [String] {
         var seen = Set<String>()
-        return (LinkingWordsSave.load().history + WordWheelSave.load().history).filter { seen.insert($0).inserted }
+        return (HaikuzySave.load().history + LinkingWordsSave.load().history + WordWheelSave.load().history).filter { seen.insert($0).inserted }
     }
 
     var body: some View {
@@ -85,8 +89,9 @@ struct WordsFoundView: View {
     }
 }
 
-/// Home's games, the first thing on the paper: a "Play with words" header written on a rule, then
-/// one `GameCard` per game, full width, stacked. A new game is one more card here. The hub
+/// Home's games, the first thing on the paper: the featured game's big card (Haikuzy, today's poem
+/// on it), then a "Play with words" header written on a rule and one `GameCard` per game, full
+/// width, stacked. A new game is one more card here. The hub
 /// (`GamesHubView`, with Words found) is hidden for now — the header is a plain label; make it a
 /// button to `.games` to bring the hub back.
 struct GamesEntry: View {
@@ -95,9 +100,12 @@ struct GamesEntry: View {
     @State private var save = WordWheelSave.load()
     @State private var linking = LinkingWordsSave.load()
     @State private var plexicon = PlexiconSave.load()
+    @State private var haikuzy = HaikuzySave.load()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            HaikuzyCard(rule: rule, save: haikuzy) { router.path.append(.haikuzy) }
+
             Text("Play with words").font(.system(.title3, design: .rounded).weight(.semibold))
                 .foregroundStyle(Color.ink)
                 .onRule(2, spacing: rule)
@@ -119,7 +127,7 @@ struct GamesEntry: View {
                 router.path.append(.plexicon)
             }
         }
-        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load(); plexicon = PlexiconSave.load() }
+        .onAppear { save = WordWheelSave.load(); linking = LinkingWordsSave.load(); plexicon = PlexiconSave.load(); haikuzy = HaikuzySave.load() }
     }
 }
 

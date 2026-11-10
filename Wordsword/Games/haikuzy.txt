@@ -1,0 +1,86 @@
+# Haikuzy: one haiku a day, one word hidden in it. Read by `HaikuzyBank`.
+#
+#   season | line one / line two / line three
+#
+# The hidden word sits in {braces}: it's the word the poem turns on, uncommon but known.
+# `{cardinal:bird+bird,redbird,robin,songbird,finch,sparrow,jay}` names the sense the poem means, for the related-words lookup only — the word
+# to guess is still just "cardinal".
+# Seasons are northern meteorological ones: winter Dec–Feb, spring Mar–May, summer Jun–Aug,
+# autumn Sep–Nov. A day shows the next haiku of its own season, in file order, so keep each
+# season's haiku in the order they should be read and APPEND new ones at the end of a season's
+# run only — inserting reshuffles every future day of that season.
+#
+# Rules, enforced by `HaikuzyBank.selfCheck()` on every DEBUG launch:
+#   - exactly one {word}, lowercase letters only, and it's in haiku-words.txt
+#   - no other word in the poem is the hidden word or shares its root
+#   - the hidden word has a `haikuzy-near.txt` line (run Scripts/make-haikuzy-near.swift after
+#     adding haiku)
+#   - no hidden word twice in the bank
+#
+# Craft: one moment, present tense, two images set against each other across a cut (the dash).
+# The season is in the images, never named as a feeling. No rhyme, no title. Lines run
+# short-long-short, about 10–17 syllables; 5-7-5 is common, not required.
+
+# ---- autumn: Nov 10 (Haikuzy #1) through Nov 30 ----
+autumn | woodsmoke at dusk — / one {ember} drifting up / to meet the first star
+autumn | geese gone south — / the {hush} they leave behind / on the gray lake
+autumn | morning fog — / a {gossamer} line / from gate to gate
+autumn | early dark — / the neighbor's {lantern} swinging / down to the henhouse
+autumn | the rake left out — / {rime} along each tine / by morning
+autumn | last apple / on the bare bough — {russet} / against the sleet
+autumn | a {brittle} leaf / skitters the length of the road / ahead of me
+autumn | clocks turned back — / splitting {kindling} / in the early dark
+autumn | empty field — / a corn {husk} rattles / on the barbed wire
+autumn | one {acorn} / drops on the shed roof — / the dog looks up
+autumn | oak leaves / gone to {ochre} — / the old coat on its hook
+autumn | at dusk / ten thousand starlings {billow} / over the marsh
+autumn | cold rain / on the window — / the {kettle:tea} starts to sing
+autumn | a deer's breath / smoking in the {thicket} — / the first hard frost
+autumn | bare branches — / a single {persimmon} / holding the light
+autumn | wind in the {hollow:valley} — / the last leaves let go / all at once
+autumn | my mother's {shawl} / down from the cedar chest — / geese overhead
+autumn | the gravestone swept — / one white {chrysanthemum} / in the cold wind
+autumn | November {drizzle} — / the porch pumpkin / caving in
+autumn | a candle's {flicker} / on the dark windowpane — / the year grows thin
+autumn | the long table / laid with the {harvest} — / rain on the roof
+
+# ---- winter: Dec 1 through Jan 8 (the solstice is Dec 21, the year turns on the 31st) ----
+winter | first light — / each blade of grass / {sheathed} in ice
+winter | between gusts / a {lull} — the chickadee / finds its voice
+winter | a snow {drift:snow} / up to the mailbox — / no letters today
+winter | each {icicle} / dripping into its own hole — / noon sun
+winter | the {toboggan} / pulled down from the rafters — / first snow
+winter | our words / turn to {vapor} — / the bus is late
+winter | snow on the fence — / a {cardinal:bird+bird,redbird,robin,songbird,finch,sparrow,jay} / burning there
+winter | the cat / claims the {hearth} — / sleet against the glass
+winter | every pane / {crystalline} by morning — / the furnace ticks
+winter | frozen marsh — / the {heron} stands / inside its stillness
+winter | a lost {mitten} / on the fence post — / waving at no one
+winter | the old {quilt} / over both our knees — / snow fills the window
+winter | deep snow — / the owl's call comes / {muffled} from the pines
+winter | low sun — / the {glint} of the ice / along the gutter
+winter | {lamplight} / on the snow outside — / the house breathing
+winter | the dog refuses / to go out — / {sleet} on the steps
+winter | the only color — / an {evergreen} / on the white hill
+winter | a fox's {tracks:footprints} / stitched across the field — / then nothing
+winter | a {wren} / under the porch eave — / the storm passes
+winter | a {glaze:ice} of ice / on every branch — / the street lamp hums
+winter | {solstice} night — / the candle outlasts / the conversation
+winter | {chimney} smoke / leaning east — / the long night begins
+winter | morning — / I carry the {cinders} out / to the snow
+winter | cold enough / to hear the {starlight} — / the dog's ears twitch
+winter | a sprig of {juniper} / on the gatepost — / the first carol
+winter | a {flurry} / on my sleeve — / gone before I look
+winter | the scrape / of a neighbor's {shovel} — / dawn in the dark
+winter | bare birch — / the branches {quiver:tremble} / under the crows
+winter | a {lullaby} / through the thin wall — / snow keeps falling
+winter | the power out — / we trim the {wick:candle} / and talk
+winter | the year's last night — / {confetti} in the gutter / freezing
+winter | new year's morning — / a fresh {calendar} / on the old nail
+winter | a {bough} lets go / of its snow — / the jay screams
+winter | winter noon — / the {pallor} of the sun / through cloud
+winter | evening snow — / the {steeple} bell / softened
+winter | a skater's {blade:skate} / writing on the river — / the sun goes down
+winter | a rabbit's {burrow} / roofed with snow — / the field asleep
+winter | under the snow / the garden's long {slumber} — / seed catalogs come
+winter | a deer's {silhouette} / at the edge of the pines — / the snow goes blue

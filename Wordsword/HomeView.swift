@@ -140,6 +140,7 @@ struct HomeView: View {
                 case .wordWheel:            WordWheelView()
                 case .linkingWords:         LinkingWordsView()
                 case .plexicon:             PlexiconView()
+                case .haikuzy:              HaikuzyView()
                 case .wordsFound:           WordsFoundView()
                 }
             }

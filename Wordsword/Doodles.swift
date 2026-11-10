@@ -462,3 +462,50 @@ private struct PlexSwipe: Shape {
         return p
     }
 }
+
+/// Haikuzy: the haiku's shape — three pen lines, short, long, short — with the middle one broken
+/// where the hidden word goes and a pink highlighter swipe in the gap: found. Pink is Haikuzy's
+/// own highlighter, the way yellow is Linking words' and green is Plexicon's.
+struct HaikuDoodle: View {
+    var color: Color = .primary
+    var accent: Color = .pink
+
+    var body: some View {
+        GeometryReader { g in
+            let s = min(g.size.width, g.size.height)
+            let w = max(1.4, s * 0.05)
+            ZStack {
+                HaikuGapSwipe().stroke(accent, style: .init(lineWidth: s * 0.16, lineCap: .round))
+                HaikuLinesShape().doodle(color, width: w)
+            }
+            .frame(width: s, height: s)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Short, long (with a gap), short: each a hair off level, the way a line goes on by hand.
+private struct HaikuLinesShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        func line(_ y: CGFloat, _ from: CGFloat, _ to: CGFloat) {
+            p.move(to: P(r, from, y + 0.01))
+            p.addQuadCurve(to: P(r, to, y - 0.012), control: P(r, (from + to) / 2, y + 0.018))
+        }
+        line(0.26, 0.12, 0.62)
+        line(0.50, 0.12, 0.38)
+        line(0.50, 0.66, 0.88)
+        line(0.74, 0.12, 0.62)
+        return p
+    }
+}
+
+private struct HaikuGapSwipe: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: P(r, 0.44, 0.51))
+        p.addQuadCurve(to: P(r, 0.60, 0.485), control: P(r, 0.52, 0.505))
+        return p
+    }
+}
