@@ -104,7 +104,7 @@ REMEMBER THEM
 
 PLAY WITH WORDS
 • Haikuzy: a new haiku every day with one word missing. You get four guesses, and each one scores how close it came.
-• Plexicon: a new five-letter word every day, found in six guesses.
+• Plexicon: a new five-letter word every day. Find it, then see what it means.
 • Linking words: a new puzzle every day. Sort 16 words into four groups that mean the same thing, and keep track of your stats.
 • Word Wheel: drag across a wheel of letters to spell words. The levels keep coming.
 Every word you find in a game is one you can look up.
@@ -114,7 +114,7 @@ Everything is stored on this iPhone, not in the cloud. To define a word, the app
 
 No account needed. Sign in with Apple if you'd like a username; that's all it does.
 ```
-**1928 / 4000 characters** (plain text; the bullets are the "•" character).
+**1939 / 4000 characters** (plain text; the bullets are the "•" character).
 
 Honesty checks: AI explanations are scoped to "supported devices" with the dictionary fallback named. No backup or sync claimed; it says outright that words are stored on the phone, not in the cloud. "No tracking" matches the "Data Not Collected" label below.
 
@@ -139,11 +139,11 @@ Definitions and synonyms come from Datamuse (api.datamuse.com) and dictionaryapi
 
 "Explain it differently" (a follow-up under each definition) uses Apple's on-device Foundation Models when the device supports it. On other devices it falls back to wording from the dictionary entry. Each tap gives a new angle. Users can't type free text to the model; the only inputs are the three follow-up buttons.
 
-Games (Home → Play with words): Haikuzy (a daily haiku with one word missing, 4 guesses scored 1–100), Plexicon (a daily five-letter word, 6 guesses), Linking words (a daily puzzle) and Word Wheel (spell words from a letter wheel). The daily games change at local midnight. Word Wheel coins are earned by playing and spent on hints. They can't be bought and have no cash value. The haiku are original, written for the app.
+Games (Home → Play with words): Haikuzy (a daily haiku with one word missing, 4 guesses scored 1–100), Plexicon (find a daily five-letter word in 6 guesses, then see its meaning), Linking words (sort 16 words into four groups of synonyms, each shown with its meaning) and Word Wheel (spell words from a letter wheel). The daily games change at local midnight. Word Wheel coins are earned by playing and spent on hints. They can't be bought and have no cash value. The haiku are original, written for the app.
 
 Everything is stored on the device. No ads, no in-app purchases, no tracking.
 ```
-**1555 characters.**
+**1641 characters.**
 
 ## 8. Age-rating questionnaire — draft answers
 
