@@ -6,7 +6,7 @@ import AppKit
 
 let panels: [(raw: String, name: String, headline: String)] = [   // |…| marks the highlighter swipe, \n breaks the line
     ("s-sentence",      "01-define",        "Any word,\nin |plain English|"),
-    ("s-haikuzy",       "02-haikuzy",       "A daily haiku,\n|one word missing|"),
+    ("s-haikuzy",       "02-haiklu",         "A daily haiku,\n|one word missing|"),
     ("s-all-words",     "03-library",       "Every word you\nlook up, |kept|"),
     ("s-chain",         "04-chain",         "Follow one word\n|to the next|"),
     ("s-flashcard",     "05-flashcards",    "Flashcards that\n|make it stick|"),
