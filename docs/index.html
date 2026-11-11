@@ -102,8 +102,17 @@ a:hover{text-decoration-thickness:2px}
   background:var(--sheet); border:1px solid var(--edge);
   box-shadow:0 1px 2px rgb(0 0 0 / .06), 0 18px 40px -12px rgb(0 0 0 / .18);
 }
-.phone img{display:block; width:100%; height:100%; object-fit:cover}
-.screen figcaption{margin-top:var(--r); text-align:center; font:400 15px/var(--r) var(--sans); color:var(--ink2)}
+.phone{position:relative}
+.phone video{display:block; width:100%; height:100%; object-fit:cover}
+/* Sits over the status bar, the one part of the reel that says nothing. Fixed ink: it is always on a light screen. */
+.reel-btn{
+  position:absolute; top:10px; right:16px; width:36px; height:36px; padding:0; border:0; border-radius:50%;
+  display:grid; place-items:center; background:rgb(0 0 0 / .72); color:#fff; cursor:pointer;
+}
+.reel-btn:hover{background:#000}
+.reel-btn svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+.reel-btn .i-play{fill:currentColor}
+.reel-btn[aria-label^="Pause"] .i-play, .reel-btn[aria-label^="Play"] .i-pause{display:none}
 
 /* ---------- Games ---------- */
 .games{margin-top:calc(var(--r) * 3)}
@@ -218,8 +227,16 @@ footer{margin-top:calc(var(--r) * 3); padding-top:var(--r)}
     </div>
 
     <figure class="screen">
-      <div class="phone"><img src="define.jpg" width="780" height="1696" alt="wordsword defining “sanguine”: adjective, SANG-gwin. Anticipating the best. Similar: optimistic, rosy, hopeful. Then the word used in a sentence." loading="eager" decoding="async"></div>
-      <figcaption>One plain sentence, then back to the book.</figcaption>
+      <div class="phone">
+        <!-- recorded off the iPhone 17 Pro simulator by Screens/testDemoReel, cut by Scripts/demo-reel.swift -->
+        <video muted loop playsinline preload="none" width="780" height="1696" poster="define-poster.jpg"
+               aria-label="wordsword in use: typing “ephemeral” brings up its definition, Lasting for a short period of time, with similar words temporary, transitory, passing and transient. More synonyms adds six more, then Add to wordlist ticks it into a Book club list.">
+          <source src="define.mp4" type="video/mp4">
+        </video>
+        <button class="reel-btn" type="button" aria-label="Pause demo" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-pause" d="M8.5 5.5v13M15.5 5.5v13"/><path class="i-play" d="M8 5.5v13l10.5-6.5z"/></svg>
+        </button>
+      </div>
     </figure>
   </section>
 
@@ -255,5 +272,18 @@ footer{margin-top:calc(var(--r) * 3); padding-top:var(--r)}
   </footer>
 </main>
 
+<script>
+// The reel loops while it's on screen. Autoplay lives here, not in the markup, so reduced motion
+// keeps the poster until someone presses play, and a pause sticks even after scrolling back.
+(() => {
+  const v = document.querySelector('.phone video'), btn = document.querySelector('.reel-btn');
+  let held = !matchMedia('(prefers-reduced-motion: no-preference)').matches, seen = !('IntersectionObserver' in window);
+  const run = () => { if (seen && !held) { v.preload = 'auto'; v.play().catch(() => {}); } else v.pause(); };
+  const sync = () => btn.setAttribute('aria-label', held ? 'Play demo' : 'Pause demo');
+  btn.addEventListener('click', () => { held = !held; sync(); run(); });
+  if (!seen) new IntersectionObserver(([e]) => { seen = e.isIntersecting; run(); }, { rootMargin: '200px' }).observe(v);
+  sync(); btn.hidden = false; run();
+})();
+</script>
 </body>
 </html>

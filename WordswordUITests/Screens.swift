@@ -34,6 +34,36 @@ final class Screens: XCTestCase {
         XCTAssertTrue(app.textFields["type a word"].waitForExistence(timeout: 5))
     }
 
+    /// The landing-page reel (Scripts/demo-reel.swift): the define flow at watching pace. Run alone while `simctl io booted recordVideo` records; every tap's host time and
+    /// point goes to SHOTS_DIR/taps.json so the touch dots can be drawn on afterwards.
+    func testDemoReel() {
+        app.launchArguments = ["-onboarded", "YES"]
+        app.launch()
+        var taps: [[String: Double]] = []
+        func tap(_ e: XCUIElement) {
+            let f = e.frame
+            taps.append(["t": Date().timeIntervalSince1970, "x": f.midX, "y": f.midY])
+            e.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()   // keys fail the AX scroll-to-visible a plain tap() does first
+        }
+        defer { try? JSONSerialization.data(withJSONObject: taps).write(to: dir.appendingPathComponent("taps.json")) }
+        let field = app.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5)); sleep(2)
+        usleep(300_000)                                 // Home opens focused; a tap on the field only pops AutoFill
+        for c in ProcessInfo.processInfo.environment["REEL_WORD"] ?? "ephemeral" { field.typeText(String(c)); usleep(120_000) }   // the sim's hardware keyboard: no key taps to show
+        usleep(400_000); field.typeText("\n")
+        XCTAssertTrue(app.staticTexts["adjective"].waitForExistence(timeout: 20)); sleep(2)
+        tap(app.buttons["More synonyms"]); sleep(3)   // no model needed, so the take never waits on the sim's
+        tap(app.buttons["Add to wordlist"]); sleep(1)
+        let row = app.staticTexts["Book club"]
+        if !row.exists {                          // a fresh sim has none: make it (cut from the reel), untick it
+            let name = app.textFields["New wordlist"]
+            name.tap(); name.typeText("Book club\n"); sleep(1); row.tap(); sleep(1)
+        }
+        tap(row); sleep(2)
+        row.tap(); sleep(1)                        // untick it again so the next run starts the same
+        app.buttons["Done"].tap()
+    }
+
     func testDefineFlow() {
         app.launchArguments = ["-onboarded", "YES"]
         app.launch()
