@@ -1,6 +1,6 @@
 # wordsword — App Store listing copy
 
-Drafted 2026-11-01 for the first App Store submission; updated 2026-11-10 for Plexicon, Haikuzy and Alex's name and category picks. Paste-ready. Every count below was computed by a script (Python `len()` for characters, `len(s.encode())` for keyword bytes), not estimated. Apple's limits are the ones fetched live on 2026-11-01.
+Drafted 2026-11-01 for the first App Store submission; updated 2026-11-10 for Plexicon, Haiklu and Alex's name and category picks. Paste-ready. Every count below was computed by a script (Python `len()` for characters, `len(s.encode())` for keyword bytes), not estimated. Apple's limits are the ones fetched live on 2026-11-01.
 
 Only features that ship today are described. Not mentioned anywhere because they don't exist: backup, sync, multiple devices, widgets, ads, purchases.
 
@@ -69,9 +69,9 @@ If the name changes to alternate 2, swap `define` for `dictionary` (bytes: 100).
 ## 4. Promotional text (limit 170 characters)
 
 ```text
-New: Haikuzy, a daily haiku with one word missing, and Plexicon, a daily five-letter word. Look up any word in one plain sentence; it waits in your library.
+New: Haiklu, a daily haiku with one word missing, and Plexicon, a daily five-letter word. Look up any word in one plain sentence; it waits in your library.
 ```
-**156 / 170 characters.** Not indexed for search, so it's free to talk about what's new. It can be changed without a new build; swap it when there's news.
+**155 / 170 characters.** Not indexed for search, so it's free to talk about what's new. It can be changed without a new build; swap it when there's news.
 
 ## 5. Description (limit 4000 characters)
 
@@ -103,7 +103,7 @@ REMEMBER THEM
 • A new word of the day, every day.
 
 PLAY WITH WORDS
-• Haikuzy: a new haiku every day with one word missing. You get four guesses, and each one scores how close it came.
+• Haiklu: a new haiku every day with one word missing. You get four guesses, and each one scores how close it came.
 • Plexicon: a new five-letter word every day. Find it, then see what it means.
 • Linking words: a new puzzle every day. Sort 16 words into four groups that mean the same thing, and keep track of your stats.
 • Word Wheel: drag across a wheel of letters to spell words. The levels keep coming.
@@ -114,7 +114,7 @@ Everything is stored on this iPhone, not in the cloud. To define a word, the app
 
 No account needed. Sign in with Apple if you'd like a username; that's all it does.
 ```
-**1939 / 4000 characters** (plain text; the bullets are the "•" character).
+**1938 / 4000 characters** (plain text; the bullets are the "•" character).
 
 Honesty checks: AI explanations are scoped to "supported devices" with the dictionary fallback named. No backup or sync claimed; it says outright that words are stored on the phone, not in the cloud. "No tracking" matches the "Data Not Collected" label below.
 
@@ -139,11 +139,11 @@ Definitions and synonyms come from Datamuse (api.datamuse.com) and dictionaryapi
 
 "Explain it differently" (a follow-up under each definition) uses Apple's on-device Foundation Models when the device supports it. On other devices it falls back to wording from the dictionary entry. Each tap gives a new angle. Users can't type free text to the model; the only inputs are the three follow-up buttons.
 
-Games (Home → Play with words): Haikuzy (a daily haiku with one word missing, 4 guesses scored 1–100), Plexicon (find a daily five-letter word in 6 guesses, then see its meaning), Linking words (sort 16 words into four groups of synonyms, each shown with its meaning) and Word Wheel (spell words from a letter wheel). The daily games change at local midnight. Word Wheel coins are earned by playing and spent on hints. They can't be bought and have no cash value. The haiku are original, written for the app.
+Games (Home → Play with words): Haiklu (a daily haiku with one word missing, 4 guesses scored 1–100), Plexicon (find a daily five-letter word in 6 guesses, then see its meaning), Linking words (sort 16 words into four groups of synonyms, each shown with its meaning) and Word Wheel (spell words from a letter wheel). The daily games change at local midnight. Word Wheel coins are earned by playing and spent on hints. They can't be bought and have no cash value. The haiku are original, written for the app.
 
 Everything is stored on the device. No ads, no in-app purchases, no tracking.
 ```
-**1641 characters.**
+**1640 characters.**
 
 ## 8. Age-rating questionnaire — draft answers
 
@@ -167,7 +167,7 @@ Two facts drive the answers:
 | Gambling / simulated gambling | None | Word Wheel coins are earned by playing and spent on hints; no chance mechanics, no cash value, can't be bought. |
 | Contests | None | |
 | Unrestricted web access | No | No browser or web view; only two fixed APIs. |
-| User-generated content | No | Wordlists and libraries are private to the phone; nobody sees anyone else's content. The Linking words, Plexicon and Haikuzy "Share" buttons send the player's own result out through the system share sheet. |
+| User-generated content | No | Wordlists and libraries are private to the phone; nobody sees anyone else's content. The Linking words, Plexicon and Haiklu "Share" buttons send the player's own result out through the system share sheet. |
 | Messaging and chat | No | The "chat" is tap-only definitions, not people talking to people, and has no text field. |
 | Advertising | No | |
 | Parental controls / age assurance | No | |

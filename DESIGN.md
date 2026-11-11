@@ -20,7 +20,7 @@ Platform: iOS (SwiftUI). Follows system light/dark. Liquid Glass (`.glassEffect`
 | highlighter | #FFE244 | #D6B529 @ 50% | Yellow, one of Linking words' four inks. Only ever marks a solved group there (the headword swipe was removed — it fought the word for legibility) |
 | highlighter-green | #B7F0A2 | #6FB04A @ 50% | Linking words' second ink |
 | highlighter-blue | #A6DCFF | #4A9BE0 @ 50% | Linking words' third ink |
-| highlighter-pink | #FFB7DC | #D05C9A @ 50% | Linking words' fourth ink, and Haikuzy's one mark: the hidden word, found. All four sit at half strength in dark so `ink` on them stays past 4.5:1. **The four inks never encode difficulty**: each day deals them to its groups in a seeded order (`LinkInk`) |
+| highlighter-pink | #FFB7DC | #D05C9A @ 50% | Linking words' fourth ink, and Haiklu's one mark: the hidden word, found. All four sit at half strength in dark so `ink` on them stays past 4.5:1. **The four inks never encode difficulty**: each day deals them to its groups in a seeded order (`LinkInk`) |
 | rule | #DADEE5 | #1C1F24 | Hairline dividers, and the edge on sheets and cards |
 | edge | #C3C8D1 | #343B48 | The outline on list cards (Library, wordlists, Settings): a step darker than `rule` so white rows read off the white paper |
 | shadow | black @ 10% | | Sheet lift (radius 24) |
@@ -173,7 +173,7 @@ until you stop talking.
 
 ## Games (`Games/`)
 
-Games are the first thing on the Home paper (`GamesEntry`): the **featured game's card** (Haikuzy,
+Games are the first thing on the Home paper (`GamesEntry`): the **featured game's card** (Haiklu,
 see below), then a `Play with words` header written on
 a rule (the hub is hidden for now, so it's not a link), then **one `GameCard` per game**, full width, stacked. Every game wears the
 same card — its own doodle (48pt, scaled), its name in rounded `.headline`, where you are in it
@@ -299,7 +299,7 @@ four synonyms to find, four strikes, one puzzle a day for everyone.
 - **Not Wordle's:** no green/yellow tiles, no coloured-square share grid, no "N/6", no Wordle stats
   labels. Keep it that way.
 
-**Haikuzy — the featured game** (`HaikuzyView`, logic in `Haikuzy`, numbers in `HaikuzyRules`,
+**Haiklu — the featured game** (`HaikuzyView`, logic in `Haiklu`, numbers in `HaikuzyRules`,
 progress in `HaikuzySave`, the poems in `haikuzy.txt`): one haiku a day with one word cut out of it;
 four guesses; every guess scores 1–100 for how close it is in meaning, and the word scores 100.
 
@@ -353,7 +353,7 @@ four guesses; every guess scores 1–100 for how close it is in meaning, and the
 - **Results** (Plexicon's bottom overlay): the knight at 96pt, the verdict (by guess count when
   found — First guess / Sharp / Nicely done / Last guess — else So close / Warm / Not today), the
   finished poem on hairlines, the scores (`96 · 95 · 100`), a filled "Look up “ember”", an outlined
-  Share (`Haikuzy #N` and the scores, never the word), "Next haiku in Nh Nm". No streaks or stats.
+  Share (`Haiklu #N` and the scores, never the word), "Next haiku in Nh Nm". No streaks or stats.
   The revealed word goes into Words found.
 - **Haptics:** rigid on a new best, soft otherwise, warning on a non-word, success on the word.
   The knight cheers a new best of 70+, slumps under 40. **Reduce Motion:** the word appears written,

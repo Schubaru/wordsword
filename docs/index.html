@@ -71,15 +71,8 @@ a:hover{text-decoration-thickness:2px}
   position:relative; top:var(--h1-nudge, -13px); /* baseline onto its rule */
 }
 .pos{font:600 22px/var(--r) var(--rounded); color:var(--ink2)}
-.pron{display:flex; align-items:center; gap:8px; margin:0 0 var(--r); font:600 15px/var(--r) var(--rounded); color:var(--ink2); letter-spacing:.02em}
-.say{
-  all:unset; cursor:pointer; display:inline-grid; place-items:center; width:32px; height:28px; border-radius:8px;
-  color:var(--ink2); transition:color .2s var(--ease-out), background-color .2s var(--ease-out);
-}
-.say:hover{color:var(--pen); background:var(--pen-wash)}
-.say.is-speaking{color:var(--pen)}
-.say svg{width:20px; height:20px}
-.say:focus-visible{outline:2px solid var(--pen); outline-offset:0}
+.pron{display:flex; align-items:baseline; gap:8px; margin:0 0 var(--r); font:600 15px/var(--r) var(--rounded); color:var(--ink2); letter-spacing:.02em}
+.pron i{font:italic 400 17px/var(--r) var(--serif); letter-spacing:0; padding:0 2px}
 
 .sense{margin:0 0 var(--r); font:400 clamp(30px, 5.4vw, 44px)/calc(var(--r) * 2) var(--serif); letter-spacing:-.01em; text-wrap:balance; max-width:16ch; position:relative; top:var(--sense-nudge, 10px)}
 .hl{
@@ -215,17 +208,12 @@ footer{margin-top:calc(var(--r) * 3); padding-top:var(--r)}
         <h1 id="name">wordsword</h1>
         <span class="pos">noun</span>
       </div>
-      <p class="pron">
-        <span aria-label="Pronounced word sword">WURD-sord</span>
-        <button class="say" type="button" aria-label="Hear it said" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3l4.5-3.8v12.6L7 14.5H4z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.8 6.6a7.6 7.6 0 0 1 0 10.8"/></svg>
-        </button>
-      </p>
+      <p class="pron"><span>WURD-sord</span> <i>or</i> <span>WURDZ-wurd</span></p>
       <p class="sense">A dictionary that <span class="hl">keeps your&nbsp;words.</span></p>
       <p class="blurb">Look up a word while you read and get it in plain English. Then it’s saved, so you can come back to it next week.</p>
       <div class="get">
         <span class="cta is-soon"><span class="dot" aria-hidden="true"></span>Coming soon to the App Store</span>
-        <p class="for">For iPhone.</p>
+        <p class="for">For iPhone · A N00B-Labs game</p>
       </div>
     </div>
 
@@ -240,7 +228,7 @@ footer{margin-top:calc(var(--r) * 3); padding-top:var(--r)}
     <ul>
       <li>
         <svg viewBox="0 0 100 100" aria-hidden="true"><path class="swipe" d="M44 51Q52 50.5 60 48.5" stroke="var(--hl-pink)" stroke-width="16"/><use href="#haiku" class="ghost" transform="translate(1.75 -1.5)"/><use href="#haiku"/></svg>
-        <h3>Haikuzy</h3>
+        <h3>Haiklu</h3>
         <p>A new haiku every day with one word missing.</p>
       </li>
       <li>
@@ -263,25 +251,9 @@ footer{margin-top:calc(var(--r) * 3); padding-top:var(--r)}
 
   <footer>
     <p class="promise">No ads, no tracking. Your words stay on your iPhone.</p>
-    <p class="links"><a href="support.html">Support</a><a href="privacy.html">Privacy Policy</a></p>
+    <p class="links"><a href="support.html">Support</a><a href="privacy.html">Privacy Policy</a><span>© 2026 N00B-Labs</span></p>
   </footer>
 </main>
 
-<script>
-// The speaker says the word, like the one beside every headword in the app. Hidden where speech isn't available.
-(() => {
-  const btn = document.querySelector('.say');
-  if (!('speechSynthesis' in window)) return;
-  btn.hidden = false;
-  btn.addEventListener('click', () => {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance('word sword');
-    u.lang = 'en-US'; u.rate = 0.9;
-    u.onstart = () => btn.classList.add('is-speaking');
-    u.onend = u.onerror = () => btn.classList.remove('is-speaking');
-    speechSynthesis.speak(u);
-  });
-})();
-</script>
 </body>
 </html>

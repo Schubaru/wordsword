@@ -55,7 +55,7 @@ struct HaikuzyView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { if game.haiku != nil { bottomBar } }
         .allowsHitTesting(!showResults)
-        .paperScreen("Haikuzy") { trailing }
+        .paperScreen("Haiklu") { trailing }
         .overlay(alignment: .bottom) { if showResults { results } }
         .animation(reduceMotion ? nil : Motion.reveal, value: showResults)
         .animation(reduceMotion ? nil : Motion.state, value: game.choices)
@@ -607,7 +607,7 @@ struct HaikuzyCard: View {
                 HStack(spacing: 14) {
                     HaikuDoodle(color: .ink, accent: .highlighterPink).frame(width: mark, height: mark)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Haikuzy").font(.system(.headline, design: .rounded)).foregroundStyle(Color.ink)
+                        Text("Haiklu").font(.system(.headline, design: .rounded)).foregroundStyle(Color.ink)
                         Text(detail).font(.subheadline).foregroundStyle(Color.ink2)
                     }
                     Spacer(minLength: 8)
@@ -637,9 +637,9 @@ struct HaikuzyCard: View {
     }
 
     private func accessibilityText(_ h: Haiku?, state: (finished: Bool, solved: Bool), detail: String) -> String {
-        guard let h else { return "Haikuzy, \(detail)" }
+        guard let h else { return "Haiklu, \(detail)" }
         let poem = h.lines.map { $0.replacingOccurrences(of: Haiku.blank, with: state.finished ? h.answer : "blank") }
-        return "Haikuzy, today's haiku: " + poem.joined(separator: ", ") + ". " + detail
+        return "Haiklu, today's haiku: " + poem.joined(separator: ", ") + ". " + detail
     }
 }
 

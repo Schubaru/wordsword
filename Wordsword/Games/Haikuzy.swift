@@ -419,7 +419,7 @@ struct HaikuzySave: Codable {
 
     /// The scores only — the word stays a secret for whoever you send it to.
     var shareText: String {
-        "Haikuzy #\(number)\n" + guesses.map { "\($0.score)" }.joined(separator: " · ")
+        "Haiklu #\(number)\n" + guesses.map { "\($0.score)" }.joined(separator: " · ")
     }
 
     // MARK: Loading

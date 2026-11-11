@@ -78,7 +78,7 @@ struct SettingsView: View {
             }
             Section {
                 // Wiktionary text and Commons recordings are CC BY-SA: credit, licence link, and say we change them.
-                Text("Definitions come from [Wiktionary](https://en.wiktionary.org) ([CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)) and [WordNet 3.0](https://wordnet.princeton.edu) (© Princeton University), by way of [Datamuse](https://www.datamuse.com/api/) and the [Free Dictionary API](https://dictionaryapi.dev). wordsword shortens and rewords them, and those versions are shared under the same licence. Pronunciation recordings come from Wikimedia Commons (CC BY-SA). Synonyms, spelling help and Haikuzy's scores come from Datamuse. The games' words come from ENABLE and Alan Beale's 12dicts.")
+                Text("Definitions come from [Wiktionary](https://en.wiktionary.org) ([CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)) and [WordNet 3.0](https://wordnet.princeton.edu) (© Princeton University), by way of [Datamuse](https://www.datamuse.com/api/) and the [Free Dictionary API](https://dictionaryapi.dev). wordsword shortens and rewords them, and those versions are shared under the same licence. Pronunciation recordings come from Wikimedia Commons (CC BY-SA). Synonyms, spelling help and Haiklu's scores come from Datamuse. The games' words come from ENABLE and Alan Beale's 12dicts.")
                     .font(.footnote).foregroundStyle(Color.ink2).tint(Color.pen)
                     .sheetRow(.first)
                 Link(destination: URL(string: "https://schubaru.github.io/wordsword/privacy.html")!) {

@@ -10,7 +10,7 @@ struct GamesHubView: View {
     var body: some View {
         List {
             Section {
-                row("Haikuzy", detail: Haikuzy.cardDetail(haikuzy), icon: "text.alignleft", edge: .first) {
+                row("Haiklu", detail: Haikuzy.cardDetail(haikuzy), icon: "text.alignleft", edge: .first) {
                     router.path.append(.haikuzy)
                 }
                 row("Word Wheel", detail: "Level \(save.level) · \(save.coins) coins", icon: "a.circle", edge: .middle) {
