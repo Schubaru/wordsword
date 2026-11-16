@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plexicon · wordsword</title>
+<meta name="description" content="One word a day, and what it means. Find today's five-letter word in six guesses.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0D12" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Plexicon">
+<meta property="og:description" content="One word a day, and what it means.">
+<meta property="og:image" content="https://schubaru.github.io/wordsword/icon.png">
+<link rel="icon" href="../icon.png">
+<link rel="apple-touch-icon" href="../icon.png">
+<link rel="stylesheet" href="../play/play.css">
+<link rel="modulepreload" href="../play/logic.js">
+<style>
+:root{--tile:clamp(40px, min(calc((min(100vw, 576px) - 56px - 24px) / 5), calc((100dvh - 430px) / 6)), 62px)}
+.plex{display:grid; gap:6px; justify-content:center; margin:4px 0 0}
+.row{display:grid; grid-template-columns:repeat(5, var(--tile)); gap:6px}
+.tile{
+  position:relative; width:var(--tile); height:var(--tile); border-radius:calc(var(--tile) * .19);
+  background:var(--sheet); border:1px solid var(--edge); display:grid; place-items:center;
+  font:700 calc(var(--tile) * .5)/1 var(--rounded); text-transform:uppercase; color:var(--ink);
+}
+.tile.typed{border-color:var(--ink2)}
+.tile.cursor{border:2px solid var(--pen)}
+.tile.pop{animation:pop .12s var(--ease-out)}
+@keyframes pop{50%{transform:scale(1.06)}}
+.tile svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none}
+.tile path{fill:none; stroke:var(--pen); stroke-width:4.2; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:1; stroke-dashoffset:0}
+.tile.absent{background:var(--pen-wash); border-color:var(--rule); color:var(--ink2)}
+.tile span{position:relative}
+/* A fresh row draws in left to right: the pen ring or underline, or the wash for a miss. */
+.row.fresh .tile path{animation:ink .45s var(--ease-out) var(--d) backwards}
+.row.fresh .tile.absent{animation:wash .3s ease-out var(--d) backwards}
+@keyframes ink{from{stroke-dashoffset:1}}
+@keyframes wash{from{background:var(--sheet); border-color:var(--edge); color:var(--ink)}}
+.row.win .tile{animation:hop .3s var(--ease-out) var(--h) both}
+
+.keys{display:flex; flex-direction:column; gap:8px; margin:auto 0 0; padding-top:14px; width:100%; max-width:500px; align-self:center}
+.keys div{display:flex; gap:6px; justify-content:center}
+.key{
+  position:relative; flex:1 1 0; max-width:44px; height:52px; padding:0; border-radius:8px; cursor:pointer;
+  background:var(--sheet); border:1px solid var(--edge); color:var(--ink); display:grid; place-items:center;
+  font:600 19px/1 var(--rounded); text-transform:uppercase; transition:transform .12s var(--ease-out), background-color .2s;
+}
+.key:active{transform:scale(.94)}
+.key.absent{background:var(--pen-wash); border-color:var(--rule); color:var(--ink2)}
+.key svg.m{position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none}
+.key svg.m path{fill:none; stroke:var(--pen); stroke-width:4.2; stroke-linecap:round}
+.key.wide{flex:1.5 1 0; max-width:66px; border:0; background:var(--pen-wash)}
+.key.wide svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.key.ready{background:var(--pen); color:var(--on-pen)}
+.done{margin-top:auto; padding-top:14px; display:flex; justify-content:center}
+.done .cta{max-width:320px}
+
+.bars{width:100%; display:flex; flex-direction:column; gap:4px; text-align:left; margin-bottom:4px}
+.bars > span{font:600 13px/1.4 var(--rounded); color:var(--ink2)}
+.bars div{display:grid; grid-template-columns:12px 1fr; gap:8px; align-items:center; font:600 13px/18px var(--rounded); font-variant-numeric:tabular-nums}
+.bars i{font-style:normal; color:var(--ink2)}
+.bars b{display:block; height:18px; min-width:26px; padding-right:7px; border-radius:4px; background:var(--pen-wash); text-align:right; font-weight:600}
+.bars b.mine{background:var(--pen); color:var(--on-pen)}
+
+.legend{display:flex; align-items:center; gap:14px; margin:0 0 10px; text-align:left}
+.legend .tile{--tile:40px; flex:none}
+.rules .last{margin-top:18px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="knight" class="d" stroke-width="4">
+      <path d="M30 36Q42 34 55 36Q60 52 58 68Q42 72 27 68Q25 52 30 36"/>
+      <path d="M29 56Q43 59 57.5 56M36 68L35 90L28 91M49 68L50 90L58 91"/>
+      <path d="M30 42Q22 46 19 55"/><circle cx="18" cy="57" r="10"/><path d="M13 57H23M18 51V63"/>
+      <path d="M28 30C27 6 57 6 56 30Q42 36 28 30M31 21Q42 23.5 53 21M38 27l.5 .5M45 27l.5 .5"/>
+      <path d="M44 9Q50 0 60 2Q58 10 50 11" stroke-width="3.6"/>
+      <path d="M56 44Q63 44 68 50M66 55L72 46M66 44L77 51M71.5 46.5L94 14L75 49M73.5 46.5L90 20"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="page">
+  <header class="bar">
+    <a class="icon" href="../" aria-label="Back to wordsword"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <span class="grow"></span>
+    <svg class="knight" viewBox="0 0 100 100" aria-hidden="true"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+    <button class="icon" type="button" data-rules aria-label="How to play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.2 2.6c-.9.5-1.4 1.1-1.4 2.1v.6"/><path d="M12 18.2v.1" stroke-width="2.8"/></svg></button>
+  </header>
+  <h1 class="title">Plexicon</h1>
+  <p class="caption" id="caption"></p>
+  <p class="sr" id="said" aria-live="polite"></p>
+
+  <main class="plex" id="board" aria-label="Today's board"></main>
+  <div class="keys" id="keys" aria-label="Keyboard"></div>
+  <div class="done" id="done" hidden><button class="cta outlined" type="button" id="see-results">Results</button></div>
+
+  <p class="foot"><a href="../">wordsword</a> · <a href="../support.html">Support</a> · <a href="../privacy.html">Privacy</a></p>
+</div>
+
+<dialog class="sheet" id="results" aria-labelledby="verdict">
+  <button class="icon close" type="button" data-close aria-label="See the board"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="results">
+    <svg class="big-knight" viewBox="0 0 100 100" aria-hidden="true"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+    <h2 class="verdict" id="verdict"></h2>
+    <div>
+      <p class="answer-word" id="answer"></p>
+      <p class="meaning" id="meaning"></p>
+    </div>
+    <div class="stats" id="stats" role="group"></div>
+    <div class="bars" id="bars" role="img"></div>
+    <button class="cta" type="button" id="share">Share</button>
+    <p class="countdown" id="countdown"></p>
+  </div>
+</dialog>
+
+<dialog class="sheet rules" id="rules" aria-labelledby="rules-title">
+  <button class="icon close" type="button" data-close aria-label="Done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="rules-title">How to play</h2>
+  <p>Find today's five-letter word. You get six guesses, and each one has to be a real word.</p>
+  <p>The pen marks every letter of a guess:</p>
+  <div id="legend"></div>
+  <p class="last">At the end you'll see what the word means. A new word every midnight.</p>
+</dialog>
+
+<script type="module" src="../play/plexicon.js"></script>
+</body>
+</html>

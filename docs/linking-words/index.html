@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linking words · wordsword</title>
+<meta name="description" content="Sixteen words, four groups of four that mean the same thing. A new board every midnight.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0D12" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Linking words">
+<meta property="og:description" content="Sort sixteen words into four groups that mean the same thing. A new board every day.">
+<meta property="og:image" content="https://schubaru.github.io/wordsword/icon.png">
+<link rel="icon" href="../icon.png">
+<link rel="apple-touch-icon" href="../icon.png">
+<link rel="stylesheet" href="../play/play.css">
+<link rel="modulepreload" href="../play/logic.js">
+<link rel="preload" href="../play/data/linking-words.txt" as="fetch" crossorigin>
+<style>
+.board{display:flex; flex-direction:column; gap:8px; margin-top:6px}
+.strips{display:flex; flex-direction:column; gap:8px}
+.strips:empty{display:none}
+.grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:8px}
+.tile{
+  container-type:inline-size; aspect-ratio:1.3; padding:0 4px; border-radius:12px; cursor:pointer;
+  background:var(--sheet); border:1px solid var(--edge); color:var(--ink);
+  display:grid; place-items:center; overflow:hidden; text-transform:uppercase; letter-spacing:.01em;
+  transition:background-color .18s, color .18s, border-color .18s, box-shadow .18s, transform .18s var(--ease-out);
+}
+.tile span{font:700 min(16px, calc(100cqw / (var(--len) * .78)))/1 var(--rounded); white-space:nowrap}
+.tile:hover{border-color:var(--ink2)}
+.tile[aria-pressed="true"]{background:var(--pen); color:var(--on-pen); border-color:var(--pen); box-shadow:0 4px 10px rgb(0 0 0 / .14)}
+.tile:active{transform:scale(.96)}
+.tile.hop{animation:hop .3s var(--ease-out) both}
+.board.busy .tile{cursor:default}
+
+.strip{padding:10px 14px; border-radius:14px; background:var(--sheet); border:1px solid var(--rule); text-align:center}
+.strip h3{margin:0; font:700 20px/1.3 var(--rounded); text-transform:uppercase; letter-spacing:.01em}
+.strip .words{margin:2px 0 0; font:400 15px/1.35 var(--sans)}
+.strip .m{margin:4px 0 0; font:400 13px/1.4 var(--serif); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.strip .m:empty{display:none}
+.strip.new{animation:land .38s var(--ease-out) both}
+@keyframes land{from{opacity:0; transform:scale(.96)}}
+
+.mistakes{display:flex; justify-content:center; align-items:center; gap:10px; height:calc(var(--r) * 2); font:600 15px/1 var(--rounded); color:var(--ink2)}
+.tally{display:flex; gap:9px}
+.tally svg{width:14px; height:22px; overflow:visible}
+.tally line{stroke-width:2.2; stroke-linecap:round}
+.tally .bar{stroke:var(--pen)}
+.tally .struck .bar{stroke:var(--ink2)}
+.tally .x{stroke:var(--pen); stroke-dasharray:1; stroke-dashoffset:1; transition:stroke-dashoffset .25s var(--ease-out)}
+.tally .struck .x{stroke-dashoffset:0}
+.controls{display:flex; justify-content:center; gap:10px}
+.controls .cta{max-width:320px}
+
+.share-grid{display:flex; flex-direction:column; gap:6px; padding:6px 0}
+.share-grid div{display:flex; gap:8px; justify-content:center}
+.share-grid svg{width:22px; height:22px}
+.share-grid path{stroke:var(--ink); stroke-width:1.6; stroke-linejoin:round}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="knight" class="d" stroke-width="4">
+      <path d="M30 36Q42 34 55 36Q60 52 58 68Q42 72 27 68Q25 52 30 36"/>
+      <path d="M29 56Q43 59 57.5 56M36 68L35 90L28 91M49 68L50 90L58 91"/>
+      <path d="M30 42Q22 46 19 55"/><circle cx="18" cy="57" r="10"/><path d="M13 57H23M18 51V63"/>
+      <path d="M28 30C27 6 57 6 56 30Q42 36 28 30M31 21Q42 23.5 53 21M38 27l.5 .5M45 27l.5 .5"/>
+      <path d="M44 9Q50 0 60 2Q58 10 50 11" stroke-width="3.6"/>
+      <path d="M56 44Q63 44 68 50M66 55L72 46M66 44L77 51M71.5 46.5L94 14L75 49M73.5 46.5L90 20"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="page">
+  <header class="bar">
+    <a class="icon" href="../" aria-label="Back to wordsword"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <span class="grow"></span>
+    <svg class="knight" viewBox="0 0 100 100" aria-hidden="true"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+    <button class="icon" type="button" data-rules aria-label="How to play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.2 2.6c-.9.5-1.4 1.1-1.4 2.1v.6"/><path d="M12 18.2v.1" stroke-width="2.8"/></svg></button>
+  </header>
+  <h1 class="title">Linking words</h1>
+  <p class="caption" id="caption" aria-live="polite"></p>
+
+  <main class="board" id="board" aria-label="Today's board">
+    <div class="strips" id="strips"></div>
+    <div class="grid" id="grid"></div>
+  </main>
+  <div class="mistakes" id="mistakes" role="img">
+    <span aria-hidden="true">Mistakes left</span>
+    <span class="tally" aria-hidden="true"></span>
+  </div>
+  <div class="controls" id="controls">
+    <button class="pill" type="button" id="shuffle" aria-label="Shuffle the board">Shuffle</button>
+    <button class="pill" type="button" id="deselect" aria-label="Deselect all" disabled>Deselect</button>
+  </div>
+  <div class="controls" id="done" hidden><button class="cta outlined" type="button" id="see-results">Results</button></div>
+
+  <p class="foot"><a href="../">wordsword</a> · <a href="../support.html">Support</a> · <a href="../privacy.html">Privacy</a></p>
+</div>
+
+<dialog class="sheet" id="results" aria-labelledby="verdict">
+  <button class="icon close" type="button" data-close aria-label="See the board"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="results">
+    <svg class="big-knight" viewBox="0 0 100 100" aria-hidden="true"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+    <h2 class="verdict" id="verdict"></h2>
+    <div class="stats" id="stats" role="group"></div>
+    <div class="share-grid" id="share-grid" role="img"></div>
+    <button class="cta" type="button" id="share">Share</button>
+    <p class="countdown" id="countdown"></p>
+  </div>
+</dialog>
+
+<dialog class="sheet rules" id="rules" aria-labelledby="rules-title">
+  <button class="icon close" type="button" data-close aria-label="Done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="rules-title">How to play</h2>
+  <p>Sixteen words. Four groups of four that mean the same thing.</p>
+  <p>Tap four words. The fourth tap is the guess: a right group gets highlighted, named, and explained.</p>
+  <p>Four mistakes and the board shows itself. A new one every midnight.</p>
+  <div class="strip hl-swipe" style="--ink-color:var(--hl-yellow)" aria-hidden="true">
+    <h3>Happy</h3><p class="words">glad, cheerful, merry, upbeat</p>
+  </div>
+</dialog>
+
+<script type="module" src="../play/linking.js"></script>
+</body>
+</html>
