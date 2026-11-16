@@ -42,7 +42,7 @@ button{font:inherit; color:inherit; margin:0}
 
 .page{position:relative; z-index:1; max-width:calc(var(--col) + 56px); margin:0 auto; padding:0 20px 24px 36px; min-height:100dvh; display:flex; flex-direction:column}
 @media (min-width: 640px){
-  :root{--margin-x:max(14px, calc(50% - var(--col) / 2 - 24px))}
+  :root{--margin-x:min(96px, max(14px, calc(50% - var(--col) / 2 - 24px)))}
   .page{padding-left:20px}
 }
 

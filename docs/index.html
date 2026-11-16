@@ -147,7 +147,7 @@ footer{margin-top:calc(var(--r) * 3); padding-top:var(--r)}
 .swipe{fill:none; stroke-linecap:round}
 
 @media (min-width: 900px){
-  :root{--margin-x:max(14px, calc(50% - 520px - 8px))}
+  :root{--margin-x:min(96px, max(14px, calc(50% - 520px - 8px)))} /* notebook margin near the edge; steps in only so it never crosses the text */
   .wrap{padding-top:calc(var(--r) * 3); padding-left:48px}
   .hero{grid-template-columns:1fr auto}
   :root{--h1-nudge:2px; --sense-nudge:5px}
