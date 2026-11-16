@@ -1,12 +1,9 @@
 import SwiftUI
+import WidgetKit
 
-/// Curated, reader-flavored. Cycles by day of year. Edit freely — order is the schedule.
-enum WordOfTheDay {
-    static var today: String {
-        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        return words[(day - 1) % words.count]
-    }
-
+/// Fetching and keeping the meaning. The schedule itself is in `WordOfTheDaySchedule.swift`, which
+/// the widget extension compiles too.
+extension WordOfTheDay {
     /// The one-line meaning written under the word on Home: wordsword's own sentence, the same one
     /// Define would show. Fetched once per word and kept, so Home never waits on it twice. The games
     /// use it too, for any word they end on (Plexicon's answer, Linking words' headwords).
@@ -22,24 +19,23 @@ enum WordOfTheDay {
     /// which is whatever Define first showed and can be a raw dictionary sense.
     static func kept(_ word: String) -> String? { UserDefaults.standard.string(forKey: "wotd.meaning.\(word)") }
 
-    static let words = [
-        "ephemeral", "sanguine", "laconic", "ineffable", "mellifluous", "petrichor", "sonder", "liminal",
-        "halcyon", "vestige", "penumbra", "quixotic", "serendipity", "taciturn", "verdant", "wistful",
-        "zephyr", "ebullient", "gossamer", "insouciant", "languid", "luminous", "nascent", "obfuscate",
-        "palimpsest", "querulous", "reticent", "sonorous", "tenuous", "ubiquitous", "vicarious", "winsome",
-        "aberration", "bucolic", "cacophony", "denouement", "elegy", "furtive", "garrulous", "hubris",
-        "iconoclast", "juxtapose", "kismet", "lugubrious", "maudlin", "nebulous", "ostensible", "pernicious",
-        "quiescent", "raconteur", "surreptitious", "trepidation", "umbrage", "vociferous", "wanton", "yearn",
-        "abscond", "belie", "capricious", "diaphanous", "equanimity", "fastidious", "grandiloquent", "harbinger",
-        "idyllic", "jejune", "kaleidoscopic", "lachrymose", "mercurial", "nonchalant", "opulent", "perfunctory",
-        "quotidian", "recalcitrant", "sagacious", "torpid", "unctuous", "verisimilitude", "wry", "zeitgeist",
-        "acumen", "bombastic", "candor", "desultory", "ennui", "fecund", "gregarious", "histrionic",
-        "impetuous", "jocular", "kinetic", "lithe", "moribund", "noisome", "obsequious", "paucity",
-        "quandary", "ruminate", "somnolent", "truculent", "usurp", "vapid", "wizened", "abstruse",
-        "beguile", "circumspect", "dilatory", "effervescent", "florid", "gambol", "hapless", "impunity",
-        "labyrinthine", "melancholy", "nefarious", "oblique", "propitious", "redolent", "sublime", "temerity",
-        "unfettered", "voracious", "waft", "ardent", "brusque", "cloying", "doleful", "enigmatic",
-    ]
+    /// Writes the next seven days' meanings where the word-of-the-day widget can read them, then
+    /// redraws it. One word at a time, so it never crowds the on-device model a lookup is waiting on;
+    /// words already kept cost nothing. Done for the day only once all seven landed — offline, it
+    /// tries again next time the app comes forward.
+    static func shareWeek() async {
+        guard let shared = WidgetShare.defaults else { return }
+        let today = Date.now.formatted(.iso8601.year().month().day())
+        guard shared.string(forKey: "wotd.sharedOn") != today else { return }
+        var all = true
+        for offset in 0..<7 {
+            guard !Task.isCancelled else { return }
+            let word = word(on: Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now)
+            if let m = await meaning(of: word) { shared.set(m, forKey: "wotd.meaning.\(word)") } else { all = false }
+        }
+        if all { shared.set(today, forKey: "wotd.sharedOn") }
+        WidgetCenter.shared.reloadTimelines(ofKind: "WordOfTheDay")
+    }
 }
 
 /// Word of the day, as a quiet banner floating at the top of Home: the word, how it's said, what it

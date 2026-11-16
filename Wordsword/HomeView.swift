@@ -17,8 +17,9 @@ struct HomeView: View {
     @Query(sort: \Word.lastLookedUp, order: .reverse) private var words: [Word]
     @State private var input = ""
     @State private var limit = 10
-    /// Home is born expanded: the field is focused on launch, and the sheet is the search surface.
-    @State private var expanded = true
+    /// Home is born at rest: the page shows, the sheet peeks. Focusing the field (a tap, the search
+    /// widget) expands it.
+    @State private var expanded = false
     @State private var voice = VoiceListener()
     @State private var hint: String?
     @State private var hintOffersSettings = false
@@ -146,15 +147,16 @@ struct HomeView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
-        // The search is the home page, so it opens with the keyboard already up. Focus can't be taken
-        // on the tick the view is inserted — the assignment is silently dropped and the keyboard never
-        // comes up — so wait out the splash's reveal first. Same reason as AccountFlow's step focus.
+        // The app icon opens on the page, the sheet at rest. Only the search widget's link
+        // (`wordsword://define`) opens with the keyboard up. A link that landed before Home existed is
+        // satisfied here; focus can't be taken on the tick the view is inserted — the assignment is
+        // silently dropped and the keyboard never comes up — so wait out the splash's reveal first.
         .task {
             trail = LastSearch.chain
             for w in words { w.repairHeadline() }   // local and instant: library and flashcards read this line too
             try? await Task.sleep(for: .milliseconds(380))
-            guard !Task.isCancelled else { return }
-            router.focusInput = false      // a deep link that landed before Home existed is satisfied here
+            guard !Task.isCancelled, router.focusInput else { return }
+            router.focusInput = false
             focused = true
         }
         // Up and away at once when the sheet rises (it has to clear before the sheet gets there), on

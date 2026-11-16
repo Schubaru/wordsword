@@ -7,6 +7,7 @@ struct WordswordApp: App {
     @State private var router = Router()
     @State private var auth = Auth()
     @State private var splashDone = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -46,14 +47,29 @@ struct WordswordApp: App {
             .task { if ProcessInfo.processInfo.environment["OPEN_ROUTE"] == "haikuzy" { router.path = [.haikuzy] } }
             .task { DebugSnapshots.runIfRequested(router, auth) }
             #endif
-            // wordsword://define            → focus the input (future widget)
-            // wordsword://define?word=halcyon → straight into the chat
+            // wordsword://define               → focus the input (the search widget)
+            // wordsword://define?word=halcyon   → straight into the chat (the word-of-the-day widget)
+            // wordsword://play?game=plexicon    → a game (the game widgets; see `Route(game:)`)
             // Arriving mid-onboarding is fine: the route waits on the router and opens as soon as
             // Home exists, rather than being dropped on the floor.
             .onOpenURL { url in
-                guard url.host == "define" else { return }
-                let w = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "word" }?.value
-                if let w, !w.isEmpty { router.path = [.define(w)] } else { router.path = []; router.focusInput = true }
+                let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+                func query(_ name: String) -> String? { items?.first { $0.name == name }?.value }
+                switch url.host {
+                case "define":
+                    if let w = query("word"), !w.isEmpty { router.path = [.define(w)] } else { router.path = []; router.focusInput = true }
+                case "play":
+                    if let route = query("game").flatMap(Route.init(game:)) { router.path = [route] }
+                default: break
+                }
+            }
+            // Hand the widget the week's words and meanings whenever the app comes forward. A beat
+            // late, so it never crowds the first lookup (or the banner's own fetch of today's word).
+            .task(id: scenePhase) {
+                guard scenePhase == .active else { return }
+                try? await Task.sleep(for: .seconds(3))
+                guard !Task.isCancelled else { return }
+                await WordOfTheDay.shareWeek()
             }
         }
         .modelContainer(for: [Word.self, Tag.self, Wordlist.self])
@@ -73,6 +89,17 @@ enum Route: Hashable {
     case plexicon
     case haikuzy
     case wordsFound
+
+    /// The `game` in a `wordsword://play` link. The names are the widgets' (`WidgetLink.play`).
+    init?(game: String) {
+        switch game {
+        case "haiklu":        self = .haikuzy
+        case "linking-words": self = .linkingWords
+        case "plexicon":      self = .plexicon
+        case "word-wheel":    self = .wordWheel
+        default: return nil
+        }
+    }
 }
 
 @Observable final class Router {
