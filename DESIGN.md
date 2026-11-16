@@ -328,7 +328,20 @@ four guesses; every guess scores 1–100 for how close it is in meaning, and the
   search field — body type, `sheet` fill, 1pt `rule` edge turning `pen` on focus — with the
   placeholder "Guess 2 of 4" and, once there's a word, a pen-filled arrow (Go does the same).
   Autocorrect is off: the game fixes typos itself and shows the fix. A finished day swaps the field
-  for an outlined `CTAStyle` "Results". Header: back · 44pt knight · `questionmark`.
+  for an outlined `CTAStyle` "Results". Header: back · 44pt knight · hint lightbulb · coin pill ·
+  `questionmark`.
+- **Hints** (`HaikuzyHints`, `haikuzy-hints.txt`, prices in `HaikuzyRules.hintPrices`): three, bought
+  in order with coins, 100 / 200 / 350: the part of speech the word plays in its poem, a near word a
+  few ranks down from the closest (the first not yet guessed, then fixed), and a rhyme, or the nearest
+  sound-alike labelled "Sounds like". The control is Word Wheel's: a `lightbulb` `GlassIcon` with the
+  next price under it, dimmed when the wallet is short, where a tap says how many more coins and
+  spends nothing. It's gone once all three are bought or the day is done. Each bought hint is one
+  rule under the poem: the kind in `.pron` `ink-2`, the hint in the guess words' rounded semibold.
+  Hints never spend a guess or touch the total. The share text and the results say how many were
+  used. The web game has none. `HaikuzyHints.selfCheck()` (DEBUG) holds every hidden word to a line.
+- **Coins** (`Wallet`, in `WordWheelSave.swift`): one balance for the app, seeded once from Word
+  Wheel's old one. The day's total is paid into it 1:1 when the day ends, won or lost, once a day
+  (`HaikuzySave.paid`), shown on the results as "+N coins".
 - **Real words only, typos fixed and shown** (`HaikuzyWords.resolve`): a real word is taken as typed
   (never "corrected" — "glob" stays "glob"); otherwise a single swapped-letter fix wins outright
   ("gloeb" → "globe"), then a single everyday word one edit away (two for 6+ letters); several, and
@@ -353,7 +366,7 @@ four guesses; every guess scores 1–100 for how close it is in meaning, and the
 - **Results** (Plexicon's bottom overlay): the knight at 96pt, the verdict (by guess count when
   found — First guess / Sharp / Nicely done / Last guess — else So close / Warm / Not today), the
   finished poem on hairlines, the scores (`96 · 95 · 100`), a filled "Look up “ember”", an outlined
-  Share (`Haiklu #N` and the scores, never the word), "Next haiku in Nh Nm". No streaks or stats.
+  Share (`Haiklu #N`, the total, the hints used and the scores, never the word), "Next haiku in Nh Nm". No streaks or stats.
   The revealed word goes into Words found.
 - **Haptics:** rigid on a new best, soft otherwise, warning on a non-word, success on the word.
   The knight cheers a new best of 70+, slumps under 40. **Reduce Motion:** the word appears written,

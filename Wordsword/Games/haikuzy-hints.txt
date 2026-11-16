@@ -1,0 +1,73 @@
+# Haiklu's three hints for every hidden word in haikuzy.txt, bought in this order:
+#
+#   answer | part of speech | near words | rhyme
+#
+# Part of speech is the word's job in its own poem ("hush" is a noun there), said the way a
+# dictionary would. Near words are a few ranks down from the closest one, so the hint points
+# without giving it away; the first that hasn't been guessed is shown. The rhyme is a true rhyme,
+# or `~word` for the nearest sound-alike when the word has none (shown as "sounds like").
+# Rhymes were picked from Datamuse rel_rhy / rel_nry and checked by ear.
+#
+# `HaikuzyHints.selfCheck()` holds every answer to: a line here, near words that are real words
+# and not the answer or in its poem.
+
+ember | noun | spark glow cinder | member
+hush | noun | stillness silence calm | brush
+gossamer | adjective | filmy gauzy delicate | ~gossip
+lantern | noun | lamp torch light | ~pattern
+rime | noun | frost hoarfrost ice | time
+russet | adjective | auburn copper rust | ~musket
+brittle | adjective | fragile crisp dry | little
+kindling | noun | firewood tinder sticks | dwindling
+husk | noun | shell hull chaff | dusk
+acorn | noun | chestnut walnut nut | ~unicorn
+ochre | noun | amber mustard tawny | joker
+billow | verb | surge swell roll | pillow
+kettle | noun | teapot pot urn | settle
+thicket | noun | brush undergrowth copse | ticket
+persimmon | noun | apricot pear plum | ~crimson
+hollow | noun | valley dell glen | follow
+shawl | noun | scarf wrap stole | wall
+chrysanthemum | noun | aster marigold dahlia | ~anthem
+drizzle | noun | mist sprinkle shower | sizzle
+flicker | noun | glimmer flutter waver | wicker
+harvest | noun | crop yield reaping | ~farthest
+sheathed | verb, past tense | encased covered wrapped | wreathed
+lull | noun | pause calm break | dull
+drift | noun | bank pile heap | gift
+icicle | noun | icefall frost spike | bicycle
+toboggan | noun | sled sledge sleigh | ~noggin
+vapor | noun | steam mist fog | paper
+cardinal | noun | redbird songbird finch | ~carnival
+hearth | noun | fireplace fireside grate | ~earth
+crystalline | adjective | glassy clear frosted | valentine
+heron | noun | egret crane stork | baron
+mitten | noun | glove gauntlet muffler | kitten
+quilt | noun | blanket comforter coverlet | built
+muffled | adjective | muted dampened faint | shuffled
+glint | noun | gleam sparkle flash | flint
+lamplight | noun | candlelight glow gleam | ~campsite
+sleet | noun | hail slush snow | street
+evergreen | noun | pine fir spruce | between
+tracks | plural noun | prints trail footsteps | stacks
+wren | noun | sparrow finch songbird | ten
+glaze | noun | coating sheen film | maze
+solstice | noun | equinox midwinter yule | ~office
+chimney | noun | flue smokestack stack | ~kidney
+cinders | plural noun | ashes clinkers soot | hinders
+starlight | noun | twinkle glimmer moonlight | bright
+juniper | noun | cedar cypress pine | ~jupiter
+flurry | noun | gust swirl squall | hurry
+shovel | noun | spade scoop trowel | hovel
+quiver | verb | tremble shake shudder | river
+lullaby | noun | cradlesong song croon | alibi
+wick | noun | strand thread candle | stick
+confetti | noun | streamers glitter fleck | spaghetti
+calendar | noun | almanac diary planner | ~lavender
+bough | noun | branch limb twig | now
+pallor | noun | paleness wanness whiteness | valor
+steeple | noun | spire tower belfry | people
+blade | noun | runner edge skate | shade
+burrow | noun | den hole warren | furrow
+slumber | noun | sleep rest doze | number
+silhouette | noun | outline shadow profile | regret

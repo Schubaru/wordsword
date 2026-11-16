@@ -34,7 +34,7 @@ import Observation
         guard let level, !level.targets.isEmpty else { return false }
         return level.targets.allSatisfy { found.contains($0.word) }
     }
-    var canHint: Bool { save.coins >= WordWheelRules.hintPrice }
+    var canHint: Bool { Wallet.shared.coins >= WordWheelRules.hintPrice }
     var multiplier: Double { WordWheelRules.multiplier(streak: save.streak) }
 
     /// Builds the current level off the main thread (the first call also loads the dictionary).
@@ -86,7 +86,7 @@ import Observation
         } else if level.targetWords.contains(word) {
             save.streak += 1
             let c = WordWheelRules.coins(for: word, bonus: false, streak: save.streak)
-            save.coins += c; save.levelCoins += c
+            Wallet.shared.earn(c); save.levelCoins += c
             save.foundTargets.append(word)
             lastFound = level.targets.first { $0.word == word }
             remember(word)
@@ -94,7 +94,7 @@ import Observation
         } else if level.bonus.contains(word) {
             save.streak += 1
             let c = WordWheelRules.coins(for: word, bonus: true, streak: save.streak)
-            save.coins += c; save.levelCoins += c
+            Wallet.shared.earn(c); save.levelCoins += c
             save.foundBonus.append(word)
             remember(word)
             kind = .bonus(coins: c)
@@ -146,7 +146,7 @@ import Observation
     func reveal(_ cell: Level.Cell) {
         guard picking, let level, level.grid[cell] != nil, letter(at: cell) == nil else { return }
         picking = false
-        save.coins -= WordWheelRules.hintPrice
+        guard Wallet.shared.spend(WordWheelRules.hintPrice) else { return }
         save.revealed.append(cell)
         // A word whose every letter is now showing counts as found. No coins: the hints paid for it.
         for p in level.targets where !found.contains(p.word) && p.cells.allSatisfy({ letter(at: $0) != nil }) {

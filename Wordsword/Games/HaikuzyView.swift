@@ -32,6 +32,7 @@ struct HaikuzyView: View {
                         captionRow
                         HaikuPoem(haiku: h, font: .poem, rule: rule, reveal: reveal, animate: writing)
                             .padding(.top, rule)
+                        if !game.hintLines.isEmpty { hints.padding(.top, rule) }
                         Color.clear.frame(height: rule)
                         ForEach(0..<HaikuzyRules.maxGuesses, id: \.self) { i in
                             GuessLine(index: i,
@@ -74,6 +75,47 @@ struct HaikuzyView: View {
         .onChange(of: game.flash?.id) { _, _ in if let f = game.flash { react(f) } }
         .onChange(of: game.phase) { _, p in finish(p) }
         .onChange(of: game.caption) { _, c in if let c { UIAccessibility.post(notification: .announcement, argument: c) } }
+        .onChange(of: game.hintsUsed) { old, n in
+            guard n > old, let l = game.hintLines.last else { return }
+            pulse(.impact(flexibility: .soft))
+            UIAccessibility.post(notification: .announcement, argument: "\(l.label): \(l.text)")
+        }
+    }
+
+    // MARK: Hints
+    /// The bought hints, one rule each under the poem: what kind of hint in `ink-2`, then the hint
+    /// in the guess words' type. Written on the paper like everything else, not boxed.
+    private var hints: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(game.hintLines.enumerated()), id: \.offset) { _, l in
+                HStack(alignment: .lastTextBaseline, spacing: 10) {
+                    Text(l.label).font(.pron).foregroundStyle(Color.ink2)
+                    Text(l.text).font(.system(.body, design: .rounded).weight(.semibold)).foregroundStyle(Color.ink)
+                }
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onRule(spacing: rule)
+                .transition(.opacity.combined(with: .move(edge: .leading)))
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .animation(reduceMotion ? nil : Motion.state, value: game.hintsUsed)
+    }
+
+    /// The lightbulb and, under it, what the next hint costs — Word Wheel's hint control. Short of
+    /// coins, the price dims and a tap says how many more; nothing is spent.
+    private var hintButton: some View {
+        let price = game.nextHintPrice ?? 0
+        let short = game.coinsShort
+        return VStack(spacing: 2) {
+            GlassIcon("lightbulb", short > 0 ? "Hint, \(price) coins, \(short) more needed" : "Hint, \(price) coins") {
+                game.buyHint()
+            }
+            Text("\(price)")
+                .font(.caption2.weight(.semibold)).monospacedDigit()
+                .foregroundStyle(short > 0 ? Color.ink2 : Color.ink)
+                .accessibilityHidden(true)
+        }
     }
 
     private var reveal: HaikuPoem.Reveal { game.finished ? .written(found: game.phase == .won) : .hidden }
@@ -206,8 +248,11 @@ struct HaikuzyView: View {
                 .frame(width: 44, height: 44)
                 .animation(reduceMotion ? nil : Motion.state, value: reaction)
                 .accessibilityHidden(true)
+            if game.canBuyHint { hintButton.transition(.opacity) }
+            CoinPill(coins: Wallet.shared.coins)
             GlassIcon("questionmark", "How to play") { showRules = true }
         }
+        .animation(reduceMotion ? nil : Motion.state, value: game.canBuyHint)
     }
 
     // MARK: Results
@@ -233,24 +278,24 @@ struct HaikuzyView: View {
         .accessibilityAction(.escape) { showResults = false }
     }
 
-    /// The day's total, the number players compare. A solve's unused guesses count 100 each, said
-    /// underneath so the sum above still adds up.
+    /// The day's total, the number players compare. Just the number: the rules say fewer guesses
+    /// score higher, so it needs no working shown.
     private var total: some View {
-        let s = game.save
-        return VStack(spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(s.total)").font(.system(.largeTitle, design: .rounded).weight(.bold))
-                    .monospacedDigit().foregroundStyle(Color.ink)
-                Text("of \(HaikuzyRules.maxTotal)").font(.pron).foregroundStyle(Color.ink2)
-            }
-            if s.unused > 0 {
-                Text("+\(s.unused * 100) for \(s.unused == 1 ? "the guess" : "the \(s.unused) guesses") you didn\u{2019}t need")
-                    .font(.footnote).foregroundStyle(Color.ink2)
-            }
+        Text("\(game.save.total)").font(.system(.largeTitle, design: .rounded).weight(.bold))
+            .monospacedDigit().foregroundStyle(Color.ink)
+            .accessibilityLabel("Total \(game.save.total)")
+    }
+
+    /// The total, paid into the wallet as coins, and the hints it took.
+    private var payout: some View {
+        let h = game.hintsUsed
+        return HStack(spacing: 6) {
+            CoinDoodle().frame(width: 16, height: 16)
+            Text("+\(game.save.total) coins" + (h == 0 ? "" : " · \(h) hint\(h == 1 ? "" : "s") used"))
+                .font(.pron).foregroundStyle(Color.ink2).monospacedDigit()
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Total \(s.total) of \(HaikuzyRules.maxTotal)"
-                            + (s.unused > 0 ? ", including \(s.unused * 100) for unused guesses" : ""))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(game.save.total) coins added" + (h == 0 ? "" : ", \(h) hint\(h == 1 ? "" : "s") used"))
     }
 
     private var resultsBody: some View {
@@ -269,6 +314,7 @@ struct HaikuzyView: View {
                 .foregroundStyle(Color.ink2)
                 .accessibilityLabel("Scores: " + game.guesses.map { "\($0.word) \($0.score)" }.joined(separator: ", "))
             total
+            payout
             // The point of every game here: the word you found is a word you can look up.
             if let a = game.answer {
                 Button("Look up \u{201C}\(a)\u{201D}") { router.path.append(.define(a)) }
@@ -585,6 +631,9 @@ struct HaikuzyRulesSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 line("One word is missing from today's haiku. Guess it in four tries.")
                 line("Every guess scores 1 to 100 for how close it is in meaning. The word itself scores 100.")
+                line("Solve it in fewer guesses for a higher total. Your total turns into coins.")
+                line("Stuck? Spend coins on a hint: the part of speech, then a word near it, then a rhyme.")
+                line("Haiku here don't always count 5-7-5, so go easy on counting syllables.")
                 line("Only real words count, and a typo gets fixed for you.")
                 line("A new haiku every midnight, and every word is one you can look up.")
             }

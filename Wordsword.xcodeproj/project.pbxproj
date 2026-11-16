@@ -40,6 +40,7 @@
 		7FF069C7353383257427B9CD /* Plexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD7FD9AF92FBB68C75D032C2 /* Plexicon.swift */; };
 		82A5C475103B048B7CF25B6C /* LinkingWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DB423FD4F4E627BD83A54F /* LinkingWords.swift */; };
 		86C61EC39BE644F3163DB6A5 /* GamesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C05C7EA87D402DE6CF59C27 /* GamesHubView.swift */; };
+		99E43B9295C342203A16C021 /* haikuzy-hints.txt in Resources */ = {isa = PBXBuildFile; fileRef = 66AA299C393F242A71327A01 /* haikuzy-hints.txt */; };
 		9C85D2BAF342A434F3638AAA /* WheelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 580EF313045218A662AA2A23 /* WheelView.swift */; };
 		9EA392B633DE8F8F18ECBD05 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 021530C362EEC05D054CB050 /* PrivacyInfo.xcprivacy */; };
 		A5E35C203AC5DC24ED0F75D3 /* WordWheelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B909F660788EEF83697F73 /* WordWheelView.swift */; };
@@ -88,6 +89,7 @@
 		566973DA3AD398B1F541A616 /* wheel-words.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "wheel-words.txt"; sourceTree = "<group>"; };
 		580EF313045218A662AA2A23 /* WheelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WheelView.swift; sourceTree = "<group>"; };
 		5AC47D6EFE7C15B72112B564 /* Haikuzy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haikuzy.swift; sourceTree = "<group>"; };
+		66AA299C393F242A71327A01 /* haikuzy-hints.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "haikuzy-hints.txt"; sourceTree = "<group>"; };
 		6AA0876D08FCD9CD8D4DD0C3 /* LinkingWordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkingWordsView.swift; sourceTree = "<group>"; };
 		79AC5FF4B3F440C2C8754B78 /* WordswordApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordswordApp.swift; sourceTree = "<group>"; };
 		7BC2A3636195EDE7A05E137A /* StoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryView.swift; sourceTree = "<group>"; };
@@ -171,6 +173,7 @@
 				7C05C7EA87D402DE6CF59C27 /* GamesHubView.swift */,
 				03CEB5A44F110EC5C62B9D82 /* haiku-common.txt */,
 				F3B8C5D4EA0A1CDDDBCD4E41 /* haiku-words.txt */,
+				66AA299C393F242A71327A01 /* haikuzy-hints.txt */,
 				AA8A8413AE8E51AB4B94FF47 /* haikuzy-near.txt */,
 				5AC47D6EFE7C15B72112B564 /* Haikuzy.swift */,
 				8446945797644A87D0E7094D /* haikuzy.txt */,
@@ -299,6 +302,7 @@
 				9EA392B633DE8F8F18ECBD05 /* PrivacyInfo.xcprivacy in Resources */,
 				D1AEA0DEFACD52B38D9993FF /* haiku-common.txt in Resources */,
 				7D7F3EB2CE417723734CEF3E /* haiku-words.txt in Resources */,
+				99E43B9295C342203A16C021 /* haikuzy-hints.txt in Resources */,
 				648A969F57254597C897E424 /* haikuzy-near.txt in Resources */,
 				6F7BAD630BDFA6EFCEBCC89F /* haikuzy.txt in Resources */,
 				1FE395173B78CE853821E641 /* linking-words.txt in Resources */,

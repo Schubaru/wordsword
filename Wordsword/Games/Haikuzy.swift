@@ -116,6 +116,7 @@ enum HaikuzyBank {
         }
         HaikuzyWords.selfCheck()
         HaikuzyScore.selfCheck()
+        HaikuzyHints.selfCheck()
     }
     #endif
 }
@@ -313,10 +314,62 @@ enum HaikuzyScore {
     #endif
 }
 
+// MARK: - Hints
+/// `haikuzy-hints.txt`: for every hidden word, its part of speech in its poem, a few near words, and
+/// a rhyme (or the nearest sound-alike). Bought in that order, each dearer than the last.
+enum HaikuzyHints {
+    struct Entry: Sendable {
+        let pos: String
+        let near: [String]
+        let rhyme: String
+        let soundsLike: Bool
+    }
+
+    nonisolated static let table: [String: Entry] = {
+        guard let url = Bundle.main.url(forResource: "haikuzy-hints", withExtension: "txt"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return [:] }
+        return parse(text)
+    }()
+
+    nonisolated static func parse(_ text: String) -> [String: Entry] {
+        var out: [String: Entry] = [:]
+        for raw in text.split(separator: "\n") where !raw.hasPrefix("#") {
+            let f = raw.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+            guard f.count == 4, !f[0].isEmpty else { continue }
+            out[f[0]] = Entry(pos: f[1], near: f[2].split(separator: " ").map(String.init),
+                              rhyme: f[3].hasPrefix("~") ? String(f[3].dropFirst()) : f[3],
+                              soundsLike: f[3].hasPrefix("~"))
+        }
+        return out
+    }
+
+    #if DEBUG
+    nonisolated static func selfCheck() {
+        let words = HaikuzyWords.shared
+        for h in HaikuzyBank.all {
+            let a = h.answer
+            guard let e = table[a] else { assertionFailure("\(a) has no haikuzy-hints.txt line"); continue }
+            let poem = Set(h.lines.joined(separator: " ").lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init))
+            assert(!e.pos.isEmpty && !e.rhyme.isEmpty && e.near.count >= 2, "\(a): a hint is missing")
+            for w in e.near {
+                assert(words.contains(w), "\(a): near word \(w) isn't a word")
+                assert(!poem.contains(w), "\(a): near word \(w) is already in the poem")
+                assert(HaikuzyScore.score(w, answer: a) < 100, "\(a): near word \(w) is the answer")
+            }
+            assert(!HaikuzyScore.isAnswer(e.rhyme, a), "\(a): the rhyme is the answer")
+        }
+        let t = parse("ember | noun | spark glow | member\nlantern | noun | lamp torch | ~pattern")
+        assert(t["ember"]?.rhyme == "member" && t["ember"]?.soundsLike == false)
+        assert(t["lantern"]?.rhyme == "pattern" && t["lantern"]?.soundsLike == true)
+    }
+    #endif
+}
+
 /// Haikuzy's numbers, in one place so the feel can be tuned without touching the game.
 enum HaikuzyRules {
     static let maxGuesses = 4
-    static let maxTotal = maxGuesses * 100
+    /// Coins for each hint, in the order they come: part of speech, a near word, a rhyme.
+    static let hintPrices = [100, 200, 350]
 
     /// Rank in the "means like" list → score: 96 at rank 1, falling by 18 per factor of ten.
     nonisolated static func meaning(rank: Int) -> Double { 96 - 18 * log10(Double(max(1, rank))) }
@@ -361,11 +414,17 @@ struct HaikuzySave: Codable {
     /// Each finished day's total by day number, kept for a leaderboard. Optional so saves from
     /// before totals still decode.
     var totals: [Int: Int]?
+    /// Hints bought for `number`'s haiku, and the near word the second one showed (fixed once
+    /// shown, so guessing it doesn't turn up another for free). Optional so older saves decode.
+    var hints: Int?
+    var nearShown: String?
+    /// The last day whose total was paid into the wallet: each day pays once.
+    var paid: Int?
 
     var best: Guess? { guesses.max { $0.score < $1.score } }
     /// Guesses a solve didn't need. Each counts 100, so the quickest solve has the highest total.
     var unused: Int { guesses.contains { $0.score == 100 } ? HaikuzyRules.maxGuesses - guesses.count : 0 }
-    /// The day's total, out of `HaikuzyRules.maxTotal`: every guess's score plus 100 per unused guess.
+    /// The day's total (400 at most): every guess's score plus 100 per unused guess.
     var total: Int { guesses.reduce(0) { $0 + $1.score } + unused * 100 }
 
     private static let key = "haikuzy"
@@ -431,7 +490,8 @@ struct HaikuzySave: Codable {
 
     /// The scores only — the word stays a secret for whoever you send it to.
     var shareText: String {
-        "Haiklu #\(number) · \(save.total)/\(HaikuzyRules.maxTotal)\n" + guesses.map { "\($0.score)" }.joined(separator: " · ")
+        let h = hintsUsed == 0 ? "" : " · \(hintsUsed) hint\(hintsUsed == 1 ? "" : "s")"
+        return "Haiklu #\(number) · \(save.total)\(h)\n" + guesses.map { "\($0.score)" }.joined(separator: " · ")
     }
 
     // MARK: Loading
@@ -443,9 +503,16 @@ struct HaikuzySave: Codable {
         if save.number != n {
             save.number = n
             save.guesses = []
+            save.hints = nil
+            save.nearShown = nil
             save.store()
         }
         #if DEBUG
+        // `SIMCTL_CHILD_HAIKUZY_HINTS=2 simctl launch …` opens with that many hints already bought.
+        if let h = ProcessInfo.processInfo.environment["HAIKUZY_HINTS"], let v = Int(h), let e = hintEntry {
+            save.hints = min(v, HaikuzyRules.hintPrices.count)
+            save.nearShown = v >= 2 ? e.near.first : nil
+        }
         // `SIMCTL_CHILD_HAIKUZY_GUESSES=coal,fire simctl launch …` opens with those played.
         if save.guesses.isEmpty, let g = ProcessInfo.processInfo.environment["HAIKUZY_GUESSES"], let a = answer {
             save.guesses = g.split(separator: ",").prefix(HaikuzyRules.maxGuesses).map {
@@ -539,11 +606,52 @@ struct HaikuzySave: Codable {
     private func record(_ answer: String, won: Bool) {
         if won { save.lastSolved = save.number }
         save.totals = (save.totals ?? [:]).merging([save.number: save.total]) { $1 }
+        // The day's total turns into coins, once, win or lose.
+        if save.paid != save.number {
+            Wallet.shared.earn(save.total)
+            save.paid = save.number
+        }
         if save.history.first != answer {
             save.history.removeAll { $0 == answer }
             save.history.insert(answer, at: 0)
         }
         save.store()
+    }
+
+    // MARK: Hints
+    var hintsUsed: Int { save.hints ?? 0 }
+    /// What the next hint costs; nil once all three are out.
+    var nextHintPrice: Int? { HaikuzyRules.hintPrices.indices.contains(hintsUsed) ? HaikuzyRules.hintPrices[hintsUsed] : nil }
+    var canBuyHint: Bool { phase == .playing && nextHintPrice != nil && hintEntry != nil }
+    /// Coins still needed for the next hint; 0 when it's affordable.
+    var coinsShort: Int { max(0, (nextHintPrice ?? 0) - Wallet.shared.coins) }
+
+    /// The bought hints, in order: what they are, and what they say.
+    var hintLines: [(label: String, text: String)] {
+        guard let h = hintEntry else { return [] }
+        var out: [(String, String)] = []
+        if hintsUsed >= 1 { out.append(("Part of speech", h.pos)) }
+        if hintsUsed >= 2, let n = save.nearShown { out.append(("Near", n)) }
+        if hintsUsed >= 3 { out.append((h.soundsLike ? "Sounds like" : "Rhymes with", h.rhyme)) }
+        return out
+    }
+
+    private var hintEntry: HaikuzyHints.Entry? { answer.flatMap { HaikuzyHints.table[$0] } }
+
+    /// Buys the next hint. Too few coins: says how many more, and spends nothing.
+    @discardableResult func buyHint() -> Bool {
+        guard canBuyHint, let price = nextHintPrice, let h = hintEntry else { return false }
+        guard Wallet.shared.spend(price) else {
+            show("\(coinsShort) more coins for a hint")
+            emit(.invalid)
+            return false
+        }
+        if hintsUsed == 1 {
+            save.nearShown = h.near.first { w in !guesses.contains { HaikuzyScore.sameWord($0.word, w) } } ?? h.near.last
+        }
+        save.hints = hintsUsed + 1
+        save.store()
+        return true
     }
 
     func markRulesSeen() {
@@ -556,9 +664,8 @@ struct HaikuzySave: Codable {
     nonisolated static func cardDetail(_ save: HaikuzySave) -> String {
         let n = HaikuzyBank.number()
         guard save.number == n, !save.guesses.isEmpty else { return "Guess the missing word" }
-        let total = "\(save.total) of \(HaikuzyRules.maxTotal)"
-        if save.lastSolved == n { return "Solved in \(save.guesses.count) · \(total)" }
-        if save.guesses.count >= HaikuzyRules.maxGuesses { return "\(total) · back tomorrow" }
+        if save.lastSolved == n { return "Solved in \(save.guesses.count) · \(save.total)" }
+        if save.guesses.count >= HaikuzyRules.maxGuesses { return "\(save.total) · back tomorrow" }
         let best = save.best?.score ?? 0
         return "Guess \(save.guesses.count + 1) of \(HaikuzyRules.maxGuesses) · best \(best)"
     }

@@ -148,7 +148,7 @@ struct WordWheelView: View {
             KnightDoodle(pose: reaction, color: .ink, accent: .pen)
                 .frame(width: 44, height: 44)
                 .animation(reduceMotion ? nil : Motion.state, value: reaction)
-            CoinPill(coins: game.save.coins)
+            CoinPill(coins: Wallet.shared.coins)
         }
     }
 

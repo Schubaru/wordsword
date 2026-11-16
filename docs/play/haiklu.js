@@ -23,6 +23,9 @@ if (save.number !== N) { Object.assign(save, { number: N, guesses: [] }); persis
 let phase = 'playing', busy = false, fresh = -1, choicesFor = null;
 const finished = () => phase !== 'playing';
 const best = () => save.guesses.reduce((b, g) => (!b || g.score > b.score ? g : b), null);
+// The day's total, as HaikuzySave.total: every score, plus 100 for each guess a solve didn't need.
+const total = () => save.guesses.reduce((t, g) => t + g.score, 0) +
+  (save.guesses.some(g => g.score === 100) ? (MAX - save.guesses.length) * 100 : 0);
 
 const cap = caption($('#caption'), () => {
   if (phase === 'won') return 'Next haiku at midnight';
@@ -114,6 +117,7 @@ async function commit(word, typed) {
 
 async function finish(won) {
   if (won) save.lastSolved = save.number;
+  save.totals = { ...save.totals, [save.number]: total() };
   persist();
   phase = won ? 'won' : 'lost';
   input.blur();
@@ -136,11 +140,13 @@ function openResults() {
   $('#poem-done').innerHTML = poem(phase === 'won' ? 'found' : 'miss', false);
   $('#scores').textContent = save.guesses.map(g => g.score).join(' · ');
   $('#scores').setAttribute('aria-label', 'Scores: ' + save.guesses.map(g => `${g.word} ${g.score}`).join(', '));
+  $('#total').textContent = total();
+  $('#total').setAttribute('aria-label', `Total ${total()}`);
   resultsSheet.open();
 }
 $('#see-results').addEventListener('click', openResults);
 // The scores only: the word stays a secret for whoever you send it to.
-shareButton($('#share'), () => `Haiklu #${N}\n` + save.guesses.map(g => g.score).join(' · '));
+shareButton($('#share'), () => `Haiklu #${N} · ${total()}\n` + save.guesses.map(g => g.score).join(' · '));
 countdown($('#countdown'), 'haiku');
 
 // ---------- Today ----------

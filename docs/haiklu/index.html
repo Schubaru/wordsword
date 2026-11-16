@@ -63,6 +63,7 @@
 
 .results .poem{text-align:left; align-self:stretch; top:0; margin:4px 0; padding-top:2px;
   background-image:repeating-linear-gradient(to bottom, transparent 0 calc(var(--r) - 1px), var(--paper-rule) calc(var(--r) - 1px) var(--r)); background-position:0 -4px}
+.total{margin:0; font:700 34px/1.2 var(--rounded); color:var(--ink); font-variant-numeric:tabular-nums}
 .scores{margin:0; font:600 21px/1.3 var(--rounded); color:var(--ink2); font-variant-numeric:tabular-nums; word-spacing:.3em}
 </style>
 </head>
@@ -114,6 +115,7 @@
     <h2 class="verdict" id="verdict"></h2>
     <div class="poem" id="poem-done"></div>
     <p class="scores" id="scores"></p>
+    <p class="total" id="total"></p>
     <button class="cta" type="button" id="share">Share</button>
     <p class="countdown" id="countdown"></p>
   </div>
@@ -124,6 +126,7 @@
   <h2 id="rules-title">How to play</h2>
   <p>One word is missing from today's haiku. Guess it in four tries.</p>
   <p>Every guess scores 1 to 100 for how close it is in meaning. The word itself scores 100.</p>
+  <p>Solve it in fewer guesses for a higher total.</p>
   <p>Only real words count, and a typo gets fixed for you.</p>
   <p>A new haiku every midnight.</p>
 </dialog>

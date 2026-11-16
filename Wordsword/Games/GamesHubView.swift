@@ -13,7 +13,7 @@ struct GamesHubView: View {
                 row("Haiklu", detail: Haikuzy.cardDetail(haikuzy), icon: "text.alignleft", edge: .first) {
                     router.path.append(.haikuzy)
                 }
-                row("Word Wheel", detail: "Level \(save.level) · \(save.coins) coins", icon: "a.circle", edge: .middle) {
+                row("Word Wheel", detail: "Level \(save.level) · \(Wallet.shared.coins) coins", icon: "a.circle", edge: .middle) {
                     router.path.append(.wordWheel)
                 }
                 row("Linking words", detail: LinkingWords.cardDetail(linking), icon: "square.grid.2x2", edge: .last) {
