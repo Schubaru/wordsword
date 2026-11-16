@@ -46,6 +46,7 @@
 @keyframes grow{from{transform:scaleX(0)}}
 
 .caption.left{text-align:left}
+.caption.left:has(~ #see-results:not([hidden])){text-align:center} /* over the Results button, center it */
 .dock{margin-top:auto; padding-top:10px; display:flex; flex-direction:column; gap:10px}
 .choices{display:flex; flex-direction:column; gap:8px}
 .choices > span{font:600 15px/1.2 var(--rounded); color:var(--ink2)}
