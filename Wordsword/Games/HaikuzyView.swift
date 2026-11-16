@@ -233,6 +233,26 @@ struct HaikuzyView: View {
         .accessibilityAction(.escape) { showResults = false }
     }
 
+    /// The day's total, the number players compare. A solve's unused guesses count 100 each, said
+    /// underneath so the sum above still adds up.
+    private var total: some View {
+        let s = game.save
+        return VStack(spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(s.total)").font(.system(.largeTitle, design: .rounded).weight(.bold))
+                    .monospacedDigit().foregroundStyle(Color.ink)
+                Text("of \(HaikuzyRules.maxTotal)").font(.pron).foregroundStyle(Color.ink2)
+            }
+            if s.unused > 0 {
+                Text("+\(s.unused * 100) for \(s.unused == 1 ? "the guess" : "the \(s.unused) guesses") you didn\u{2019}t need")
+                    .font(.footnote).foregroundStyle(Color.ink2)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Total \(s.total) of \(HaikuzyRules.maxTotal)"
+                            + (s.unused > 0 ? ", including \(s.unused * 100) for unused guesses" : ""))
+    }
+
     private var resultsBody: some View {
         VStack(spacing: 12) {
             KnightDoodle(pose: game.phase == .won ? .cheer : .idle, color: .ink, accent: .pen)
@@ -248,6 +268,7 @@ struct HaikuzyView: View {
                 .font(.system(.title3, design: .rounded).weight(.semibold)).monospacedDigit()
                 .foregroundStyle(Color.ink2)
                 .accessibilityLabel("Scores: " + game.guesses.map { "\($0.word) \($0.score)" }.joined(separator: ", "))
+            total
             // The point of every game here: the word you found is a word you can look up.
             if let a = game.answer {
                 Button("Look up \u{201C}\(a)\u{201D}") { router.path.append(.define(a)) }

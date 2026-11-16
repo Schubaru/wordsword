@@ -305,6 +305,10 @@ enum HaikuzyScore {
         assert(score("banana", answer: "ember") < 30, "banana → \(score("banana", answer: "ember"))")
         assert(score("egret", answer: "heron") > score("car", answer: "heron"))
         assert((1...99).contains(score("qzx", answer: "ember")))
+        // Totals: a solve's unused guesses count 100, so faster always beats slower.
+        let g = { (s: [Int]) in HaikuzySave(guesses: s.map { .init(word: "\($0)", score: $0) }).total }
+        assert(g([100]) == 400 && g([62, 88, 100]) == 350 && g([40, 71, 90, 93]) == 294)
+        assert(g([99, 100]) > g([99, 99, 100]))
     }
     #endif
 }
@@ -312,6 +316,7 @@ enum HaikuzyScore {
 /// Haikuzy's numbers, in one place so the feel can be tuned without touching the game.
 enum HaikuzyRules {
     static let maxGuesses = 4
+    static let maxTotal = maxGuesses * 100
 
     /// Rank in the "means like" list → score: 96 at rank 1, falling by 18 per factor of ten.
     nonisolated static func meaning(rank: Int) -> Double { 96 - 18 * log10(Double(max(1, rank))) }
@@ -353,8 +358,15 @@ struct HaikuzySave: Codable {
     var rulesSeen = false
     /// Revealed words, newest first.
     var history: [String] = []
+    /// Each finished day's total by day number, kept for a leaderboard. Optional so saves from
+    /// before totals still decode.
+    var totals: [Int: Int]?
 
     var best: Guess? { guesses.max { $0.score < $1.score } }
+    /// Guesses a solve didn't need. Each counts 100, so the quickest solve has the highest total.
+    var unused: Int { guesses.contains { $0.score == 100 } ? HaikuzyRules.maxGuesses - guesses.count : 0 }
+    /// The day's total, out of `HaikuzyRules.maxTotal`: every guess's score plus 100 per unused guess.
+    var total: Int { guesses.reduce(0) { $0 + $1.score } + unused * 100 }
 
     private static let key = "haikuzy"
 
@@ -419,7 +431,7 @@ struct HaikuzySave: Codable {
 
     /// The scores only — the word stays a secret for whoever you send it to.
     var shareText: String {
-        "Haiklu #\(number)\n" + guesses.map { "\($0.score)" }.joined(separator: " · ")
+        "Haiklu #\(number) · \(save.total)/\(HaikuzyRules.maxTotal)\n" + guesses.map { "\($0.score)" }.joined(separator: " · ")
     }
 
     // MARK: Loading
@@ -526,6 +538,7 @@ struct HaikuzySave: Codable {
     /// A finished day: the word goes into Words found, and a solve is remembered for the Home card.
     private func record(_ answer: String, won: Bool) {
         if won { save.lastSolved = save.number }
+        save.totals = (save.totals ?? [:]).merging([save.number: save.total]) { $1 }
         if save.history.first != answer {
             save.history.removeAll { $0 == answer }
             save.history.insert(answer, at: 0)
@@ -543,9 +556,10 @@ struct HaikuzySave: Codable {
     nonisolated static func cardDetail(_ save: HaikuzySave) -> String {
         let n = HaikuzyBank.number()
         guard save.number == n, !save.guesses.isEmpty else { return "Guess the missing word" }
-        if save.lastSolved == n { return "Solved in \(save.guesses.count)" }
+        let total = "\(save.total) of \(HaikuzyRules.maxTotal)"
+        if save.lastSolved == n { return "Solved in \(save.guesses.count) · \(total)" }
+        if save.guesses.count >= HaikuzyRules.maxGuesses { return "\(total) · back tomorrow" }
         let best = save.best?.score ?? 0
-        if save.guesses.count >= HaikuzyRules.maxGuesses { return "Best \(best) · back tomorrow" }
         return "Guess \(save.guesses.count + 1) of \(HaikuzyRules.maxGuesses) · best \(best)"
     }
 
