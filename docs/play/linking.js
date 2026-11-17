@@ -180,7 +180,9 @@ function openResults() {
   resultsSheet.open();
 }
 $('#see-results').addEventListener('click', openResults);
-shareButton($('#share'), () => `Linking words #${N}\n` + shareRows().map(r => r.map(i => SYMBOLS[i]).join(' ')).join('\n'));
+// `data-share-url` on <body> (the standalone Linking words site) adds that link on its own line.
+const shareUrl = document.body.dataset.shareUrl;
+shareButton($('#share'), () => `Linking words #${N}\n` + shareRows().map(r => r.map(i => SYMBOLS[i]).join(' ')).join('\n') + (shareUrl ? `\n${shareUrl}` : ''));
 countdown($('#countdown'), 'puzzle');
 
 render();
