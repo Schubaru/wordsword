@@ -160,8 +160,10 @@ document.addEventListener('keydown', e => {
 // ---------- Results ----------
 const resultsSheet = sheet($('#results'));
 const verdict = () => phase !== 'won' ? 'Not today' : ['First guess', 'Sharp', 'Nicely done', 'Solid', 'Close one', 'Just in time'][save.guesses.length - 1];
+// `data-share-url` on <body> (the standalone Plexicon site) adds that link on its own line.
+const shareUrl = document.body.dataset.shareUrl;
 const shareText = () => `Plexicon #${N} · ${phase === 'won' ? `got it on guess ${save.guesses.length}` : 'not today'}\n` +
-  save.guesses.map(g => plexScore(g, answer).map(m => ['·', '○', '◉'][m]).join(' ')).join('\n');
+  save.guesses.map(g => plexScore(g, answer).map(m => ['·', '○', '◉'][m]).join(' ')).join('\n') + (shareUrl ? `\n${shareUrl}` : '');
 
 function openResults() {
   $('#verdict').textContent = verdict();
