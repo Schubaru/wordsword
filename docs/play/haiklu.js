@@ -145,8 +145,10 @@ function openResults() {
   resultsSheet.open();
 }
 $('#see-results').addEventListener('click', openResults);
-// The scores only: the word stays a secret for whoever you send it to.
-shareButton($('#share'), () => `Haiklu #${N} · ${total()}\n` + save.guesses.map(g => g.score).join(' · '));
+// The scores only: the word stays a secret for whoever you send it to. A page that names a
+// `data-share-url` on <body> (the standalone Haiklu site) adds that link on its own line.
+const shareUrl = document.body.dataset.shareUrl;
+shareButton($('#share'), () => `Haiklu #${N} · ${total()}\n` + save.guesses.map(g => g.score).join(' · ') + (shareUrl ? `\n${shareUrl}` : ''));
 countdown($('#countdown'), 'haiku');
 
 // ---------- Today ----------

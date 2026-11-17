@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Haiklu</title>
+<meta name="description" content="A new haiku every day with one word missing. Four guesses, each scored 1 to 100 for how close it comes.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0D12" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://schubaru.github.io/wordsword/haiklu-daily/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://schubaru.github.io/wordsword/haiklu-daily/">
+<meta property="og:title" content="Haiklu">
+<meta property="og:description" content="A new haiku every day with one word missing.">
+<meta property="og:image" content="https://schubaru.github.io/wordsword/haiklu-daily/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Haiklu: a new haiku every day. Find the word that's missing.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="../play/play.css">
+<link rel="modulepreload" href="../play/logic.js">
+<link rel="preload" href="../play/data/haiklu-bank.json" as="fetch" crossorigin>
+<style>
+/* The poem is written on the rules: every line's baseline on a rule, wraps onto the next. */
+.poem{margin:var(--r) 0 var(--r); font:400 22px/var(--r) var(--serif); letter-spacing:-.005em; position:relative; top:6px; min-height:calc(var(--r) * 3)}
+.poem p{margin:0}
+.blank{display:inline-block; width:76px; height:1em; vertical-align:baseline; position:relative}
+.blank svg{position:absolute; left:0; right:0; bottom:-3px; width:100%; height:6px; overflow:visible}
+.blank path{fill:none; stroke:var(--pen); stroke-width:2; stroke-linecap:round}
+.written{white-space:nowrap}
+.written.cut{animation:cut .55s var(--ease-out) both}
+@keyframes cut{from{clip-path:polygon(-4% -20%, -4% -20%, -30% 120%, -4% 120%)} to{clip-path:polygon(-4% -20%, 134% -20%, 104% 120%, -4% 120%)}}
+.written.miss{--ink-color:var(--pen-wash)}
+.written.found{--ink-color:var(--hl-pink)}
+.written.hl-swipe::before{left:-3px; right:-3px; top:18%; bottom:4%}
+.written.cut.hl-swipe::before{animation:sweep .55s var(--ease-out) .38s both}
+
+.guesses{list-style:none; margin:0; padding:0}
+.guess{height:calc(var(--r) * 2)}
+.guess .line{display:flex; align-items:baseline; gap:8px; height:var(--r); position:relative; top:7px}
+.guess .w{font:600 17px/var(--r) var(--rounded)}
+.guess .w.hl-swipe::before{--ink-color:var(--hl-pink); left:-3px; right:-3px}
+.guess s{font:600 15px/var(--r) var(--rounded); color:var(--ink2); text-decoration-color:var(--ink2)}
+.guess .score{margin-left:auto; font:500 21px/var(--r) var(--rounded); color:var(--ink2); font-variant-numeric:tabular-nums}
+.guess.best .score{font-weight:800; color:var(--ink)}
+.guess .track{height:5px; border-radius:3px; background:var(--rule); margin-top:14px; overflow:hidden}
+.guess .fill{height:100%; width:calc(var(--s) * 1%); min-width:5px; border-radius:3px; background:var(--ink2); transform-origin:left}
+.guess.best .fill{background:var(--pen)}
+.guess.fresh .fill{animation:grow .5s var(--ease-out) .05s both}
+.guess.fresh .line{animation:fade .25s ease-out both}
+@keyframes grow{from{transform:scaleX(0)}}
+
+.caption.left{text-align:left}
+.caption.left:has(~ #see-results:not([hidden])){text-align:center} /* over the Results button, center it */
+.dock{margin-top:auto; padding-top:10px; display:flex; flex-direction:column; gap:10px}
+.choices{display:flex; flex-direction:column; gap:8px}
+.choices > span{font:600 15px/1.2 var(--rounded); color:var(--ink2)}
+.choices div{display:flex; flex-wrap:wrap; gap:8px}
+.choices button{min-height:36px; padding:0 14px; border:0; border-radius:999px; background:var(--pen-wash); color:var(--ink); font:600 17px/1 var(--rounded); cursor:pointer}
+.field{display:flex; align-items:center; gap:8px; min-height:48px; padding:0 4px 0 18px; border-radius:999px; background:var(--sheet); border:1px solid var(--rule); transition:border-color .2s}
+.field:focus-within{border-color:var(--pen)}
+.field input{flex:1; min-width:0; border:0; outline:0; background:none; color:var(--ink); font:400 17px/1 var(--sans); padding:12px 0; caret-color:var(--pen)}
+.field input::placeholder{color:color-mix(in srgb, var(--ink2) 85%, transparent)}
+.go{display:grid; place-items:center; width:40px; height:40px; padding:0; border:0; border-radius:50%; background:var(--pen); color:var(--on-pen); cursor:pointer; transition:opacity .2s, transform .15s var(--ease-out)}
+.go:active{transform:scale(.92)}
+.go svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+.go[hidden]{display:grid !important; opacity:0; pointer-events:none}
+.dock .cta{max-width:320px; align-self:center}
+
+.results .poem{text-align:left; align-self:stretch; top:0; margin:4px 0; padding-top:2px;
+  background-image:repeating-linear-gradient(to bottom, transparent 0 calc(var(--r) - 1px), var(--paper-rule) calc(var(--r) - 1px) var(--r)); background-position:0 -4px}
+.total{margin:0; font:700 34px/1.2 var(--rounded); color:var(--ink); font-variant-numeric:tabular-nums}
+.scores{margin:0; font:600 21px/1.3 var(--rounded); color:var(--ink2); font-variant-numeric:tabular-nums; word-spacing:.3em}
+</style>
+</head>
+<body data-share-url="https://schubaru.github.io/wordsword/haiklu-daily/">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="knight" class="d" stroke-width="4">
+      <path d="M30 36Q42 34 55 36Q60 52 58 68Q42 72 27 68Q25 52 30 36"/>
+      <path d="M29 56Q43 59 57.5 56M36 68L35 90L28 91M49 68L50 90L58 91"/>
+      <path d="M30 42Q22 46 19 55"/><circle cx="18" cy="57" r="10"/><path d="M13 57H23M18 51V63"/>
+      <path d="M28 30C27 6 57 6 56 30Q42 36 28 30M31 21Q42 23.5 53 21M38 27l.5 .5M45 27l.5 .5"/>
+      <path d="M44 9Q50 0 60 2Q58 10 50 11" stroke-width="3.6"/>
+      <path d="M56 44Q63 44 68 50M66 55L72 46M66 44L77 51M71.5 46.5L94 14L75 49M73.5 46.5L90 20"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="page">
+  <header class="bar">
+    <span class="grow"></span>
+    <svg class="knight" viewBox="0 0 100 100" aria-hidden="true"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+    <button class="icon" type="button" data-rules aria-label="How to play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.2 2.6c-.9.5-1.4 1.1-1.4 2.1v.6"/><path d="M12 18.2v.1" stroke-width="2.8"/></svg></button>
+  </header>
+  <h1 class="title">Haiklu <small id="number"></small></h1>
+
+  <main>
+    <div class="poem" id="poem" aria-label="Today's haiku"></div>
+    <ol class="guesses" id="guesses" aria-label="Your guesses"></ol>
+  </main>
+
+  <div class="dock">
+    <p class="caption left" id="caption" aria-live="polite"></p>
+    <div class="choices" id="choices" hidden><span>Did you mean</span><div></div></div>
+    <form class="field" id="field" autocomplete="off">
+      <input id="input" type="text" inputmode="text" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Your guess">
+      <button class="go" type="submit" id="go" aria-label="Guess" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+    </form>
+    <button class="cta outlined" type="button" id="see-results" hidden>Results</button>
+  </div>
+
+  <p class="foot">A daily game from <a href="../">wordsword</a> · <a href="../privacy.html">Privacy</a></p>
+</div>
+
+<dialog class="sheet" id="results" aria-labelledby="verdict">
+  <button class="icon close" type="button" data-close aria-label="See the poem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="results">
+    <svg class="big-knight" viewBox="0 0 100 100" aria-hidden="true"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+    <h2 class="verdict" id="verdict"></h2>
+    <div class="poem" id="poem-done"></div>
+    <p class="scores" id="scores"></p>
+    <p class="total" id="total"></p>
+    <button class="cta" type="button" id="share">Share</button>
+    <p class="countdown" id="countdown"></p>
+  </div>
+</dialog>
+
+<dialog class="sheet rules" id="rules" aria-labelledby="rules-title">
+  <button class="icon close" type="button" data-close aria-label="Done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="rules-title">How to play</h2>
+  <p>One word is missing from today's haiku. Guess it in four tries.</p>
+  <p>Every guess scores 1 to 100 for how close it is in meaning. The word itself scores 100.</p>
+  <p>Solve it in fewer guesses for a higher total.</p>
+  <p>Only real words count, and a typo gets fixed for you.</p>
+  <p>A new haiku every midnight.</p>
+</dialog>
+
+<script type="module">
+// Today's number, the same one the share text carries.
+import { today } from '../play/play.js';
+document.getElementById('number').textContent = `#${today('haiklu')}`;
+</script>
+<script type="module" src="../play/haiklu.js"></script>
+</body>
+</html>

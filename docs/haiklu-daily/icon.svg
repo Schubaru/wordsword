@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <!-- Haiklu's mark: three lines of a poem on ruled paper, the middle word found in pink highlighter. -->
+  <rect width="180" height="180" rx="40" fill="#FFFFFF"/>
+  <g stroke="#E4E7EC" stroke-width="2.5">
+    <path d="M0 68H180M0 104H180M0 140H180"/>
+  </g>
+  <path d="M36 0V180" stroke="#F0837A" stroke-width="3"/>
+  <rect x="84" y="85" width="74" height="24" rx="9" fill="#FFB7DC" transform="rotate(-2.5 121 97)"/>
+  <g stroke="#151B24" stroke-width="12" stroke-linecap="round">
+    <path d="M56 56H120"/>
+    <path d="M56 92H74M98 92H140"/>
+    <path d="M56 128H106"/>
+  </g>
+</svg>

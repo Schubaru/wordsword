@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Source for docs/haiklu-daily/og.png (1200×630) and apple-touch-icon.png (180×180). Render with:
+  C="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  "$C" --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=docs/haiklu-daily/og.png "file://$PWD/Scripts/haiklu-daily-art.html#og"
+  "$C" --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=180,180 --screenshot=docs/haiklu-daily/apple-touch-icon.png "file://$PWD/Scripts/haiklu-daily-art.html#icon" -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Nunito"; font-weight:400 800; src:url(../docs/play/fonts/nunito-latin.woff2) format("woff2")}
+html,body{margin:0; background:#FFFFFF}
+.og, .icon{display:none}
+:root:has(:target) .og:target, :root:has(:target) .icon:target{display:block}
+/* The paper: college rules 42px apart (the site's 28px at 1.5×), one red margin. */
+.og{position:relative; width:1200px; height:630px; overflow:hidden; color:#151B24;
+  background-image:repeating-linear-gradient(to bottom, transparent 0 41px, #E4E7EC 41px 42px)}
+.og::before{content:""; position:absolute; inset:0 auto 0 120px; width:2px; background:#F0837A}
+.og h1{position:absolute; left:168px; top:123px; margin:0; font:800 140px/168px "Nunito"; letter-spacing:-.03em}
+.og p{position:absolute; left:172px; margin:0; font:400 52px/84px "Iowan Old Style", Georgia, serif; letter-spacing:-.005em}
+.og .l1{top:315px} .og .l2{top:399px}
+.blank{display:inline-block; width:200px; height:1em; position:relative; vertical-align:baseline}
+.blank svg{position:absolute; left:0; bottom:-6px; width:100%; height:10px; overflow:visible}
+.blank path{fill:none; stroke:#000; stroke-width:4; stroke-linecap:round}
+.og .knight{position:absolute; right:80px; top:58px; width:280px; height:280px}
+.d{fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round}
+.ghost{opacity:.35}
+.icon img{display:block; width:180px; height:180px}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="knight" class="d" stroke-width="4">
+    <path d="M30 36Q42 34 55 36Q60 52 58 68Q42 72 27 68Q25 52 30 36"/>
+    <path d="M29 56Q43 59 57.5 56M36 68L35 90L28 91M49 68L50 90L58 91"/>
+    <path d="M30 42Q22 46 19 55"/><circle cx="18" cy="57" r="10"/><path d="M13 57H23M18 51V63"/>
+    <path d="M28 30C27 6 57 6 56 30Q42 36 28 30M31 21Q42 23.5 53 21M38 27l.5 .5M45 27l.5 .5"/>
+    <path d="M44 9Q50 0 60 2Q58 10 50 11" stroke-width="3.6"/>
+    <path d="M56 44Q63 44 68 50M66 55L72 46M66 44L77 51M71.5 46.5L94 14L75 49M73.5 46.5L90 20"/>
+  </g>
+</defs></svg>
+
+<div class="og" id="og">
+  <h1>Haiklu</h1>
+  <p class="l1">A new haiku every day.</p>
+  <p class="l2">Find the word that’s <span class="blank"><svg viewBox="0 0 200 10" preserveAspectRatio="none"><path d="M2 6Q52 3.6 100 5.4T198 4.4"/></svg></span>.</p>
+  <svg class="knight" viewBox="0 0 100 100"><use href="#knight" class="ghost" transform="translate(1.4 -1.2)"/><use href="#knight"/></svg>
+</div>
+
+<!-- iOS rounds the touch icon itself, so the tile here is full-bleed white behind the same art. -->
+<div class="icon" id="icon"><img src="../docs/haiklu-daily/icon.svg" alt=""></div>
+</body></html>
